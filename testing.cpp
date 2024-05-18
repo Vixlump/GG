@@ -22,25 +22,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-//#include "libs/time_tools.hpp"
+#include "libs/time_tools.hpp"
 #define loop while(true)
 
-namespace gg{
-	void server_listening_loop() {
-		loop {
+namespace gg_test{
 
-		}
-	}
-	void server_clean_system() {
-		std::cout<<
-	}
-	void server_store_file_driver(std::string API_KEY, std::string) {
-
-	}
-}
-
-auto main (int argc, char ** argv) -> int {
-	gg::server_listening_loop();
-	gg::server_clean_system();
-	return EXIT_SUCCESS;
 }
