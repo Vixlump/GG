@@ -13,7 +13,7 @@ namespace gg {
 void receiveFile(int serverSocket, std::string & filename) {
     std::ofstream file("downloads/"+filename, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Failed to create file: " << filename << std::endl;
+        std::cout << "Failed to create file: " << filename << std::endl;
         return;
     }
 
@@ -41,7 +41,7 @@ int util_download_file(std::string filename) {
     serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        std::cerr << "Connection failed" << std::endl;
+        std::cout << "Connection failed" << std::endl;
         close(clientSocket);
         return -1;
     }

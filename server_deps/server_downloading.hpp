@@ -11,8 +11,8 @@
 
 namespace gg{
 
-void sendFile(int clientSocket, const char* filename) {
-    std::ifstream file(filename, std::ios::binary);
+void sendFile(int clientSocket, std::string filename) {
+    std::ifstream file("archive/"+filename, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
         return;
@@ -22,12 +22,12 @@ void sendFile(int clientSocket, const char* filename) {
     while (file.read(buffer, sizeof(buffer))) {
         send(clientSocket, buffer, sizeof(buffer), 0);
     }
-    send(clientSocket, buffer, file.gcount(), 0); // Send remaining bytes
+    send(clientSocket, buffer, file.gcount(), 0); //Send remaining bytes
 
     file.close();
 }
 
-int server_downloader() {
+void server_downloader() {
     int serverSocket, clientSocket;
     struct sockaddr_in serverAddr, clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
@@ -35,7 +35,7 @@ int server_downloader() {
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
         std::cerr << "Failed to create socket" << std::endl;
-        return -1;
+        return;
     }
 
     serverAddr.sin_family = AF_INET;
@@ -45,34 +45,36 @@ int server_downloader() {
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         std::cerr << "Bind failed" << std::endl;
         close(serverSocket);
-        return -1;
+        return;
     }
 
     if (listen(serverSocket, 3) < 0) {
         std::cerr << "Listen failed" << std::endl;
         close(serverSocket);
-        return -1;
+        return;
     }
 
     std::cout << "Waiting for connections..." << std::endl;
 
-    clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
-    if (clientSocket < 0) {
-        std::cerr << "Accept failed" << std::endl;
-        close(serverSocket);
-        return -1;
-    }
+    loop{
+	    clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
+	    if (clientSocket < 0) {
+	        std::cerr << "Accept failed" << std::endl;
+	        close(serverSocket);
+	        return;
+	    }
 
-    char filename[BUFFER_SIZE] = {0};
-    ssize_t read_values = read(clientSocket, filename, BUFFER_SIZE);
-    std::cout << "Requested file: " << filename << std::endl;
+	    char filename[BUFFER_SIZE] = {0};
+	    ssize_t read_values = read(clientSocket, filename, BUFFER_SIZE);
+	    std::cout << "Requested file: " << filename << std::endl;
 
-    sendFile(clientSocket, filename);
+	    sendFile(clientSocket, filename);
 
-    close(clientSocket);
+	    close(clientSocket);
+	}
     close(serverSocket);
 
-    return 0;
+    return;
 }
 
 }
