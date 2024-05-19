@@ -6,19 +6,19 @@
 
 #include "gg.hpp"
 
-GG::client::client() {
+GG::Client::Client() {
 	char *home = getenv("HOME");
 	this->_home = home == NULL ? "." : home;
 	this->_load_session(this->_home + "/.ggsession");
 }
 
-GG::client::~client() {
+GG::Client::~Client() {
 	if (this->_user.size() > 0) {
 		this->_save_session(this->_home + "/.ggsession");
 	}
 }
 
-void GG::client::_load_session(std::string file_path) {
+void GG::Client::_load_session(std::string file_path) {
 	std::ifstream session_file(file_path, std::ifstream::in);
 
 	if (!session_file.is_open()) {
@@ -56,7 +56,7 @@ void GG::client::_load_session(std::string file_path) {
 	session_file.close();
 }
 
-void GG::client::_save_session(std::string file_path) {
+void GG::Client::_save_session(std::string file_path) {
 	std::ofstream session_file(file_path, std::ofstream::out);
 
 	if (!session_file.is_open()) {
@@ -79,12 +79,12 @@ void GG::client::_save_session(std::string file_path) {
 	session_file.close();
 }
 
-void GG::client::_clear_session(std::string file_path) {
+void GG::Client::_clear_session(std::string file_path) {
 	std::ofstream session_file(file_path, std::ofstream::out);
 	session_file.close(); // should write the file as empty
 }
 
-int GG::client::request(std::string user) {
+int GG::Client::request(std::string user) {
 	this->_user = user;
 	this->_api_key = "this_is_a_fake_api_key";
 
@@ -96,7 +96,7 @@ int GG::client::request(std::string user) {
 	return 0;
 }
 
-int GG::client::login(std::string user) {
+int GG::Client::login(std::string user) {
 	this->logout(); // log out any user before logging in
 
 	// attempt to load the session stored in ~/.gg{user}
@@ -108,7 +108,7 @@ int GG::client::login(std::string user) {
 	return 0;
 }
 
-int GG::client::logout(void) {
+int GG::Client::logout(void) {
 	// check if currently logged in
 	if (this->_user.size() > 0) {
 		// attempt to save the current session to ~/.gg{user}
@@ -124,7 +124,7 @@ int GG::client::logout(void) {
 	return 0;
 }
 
-std::string GG::client::status(void) {
+std::string GG::Client::status(void) {
 	std::string ret;
 
 	if (this->_user.size() == 0) {
@@ -174,7 +174,7 @@ std::string GG::client::status(void) {
 	return ret;
 }
 
-int GG::client::upload(std::string file_path, std::string pass) {
+int GG::Client::upload(std::string file_path, std::string pass) {
 	std::cout
 		<< "upload\n"
 		<< "file_path: " << file_path << "\n"
@@ -183,7 +183,7 @@ int GG::client::upload(std::string file_path, std::string pass) {
 	return 0;
 }
 
-int GG::client::stream(std::string token, std::string pass) {
+int GG::Client::stream(std::string token, std::string pass) {
 	std::cout
 		<< "stream\n"
 		<< "token: " << token << "\n"

@@ -4,11 +4,17 @@
 #include <string>
 #include <unordered_map>
 
+extern "C" {
+	#include <libavcodec/avcodec.h>
+	#include <libavformat/avformat.h>
+	#include <libswscale/swscale.h>
+}
+
 namespace GG {
-	class client {
+	class Client {
 	public:
-		client();
-		~client();
+		Client();
+		~Client();
 
 		// request an api key from the server
 		int request(std::string user);

@@ -1,10 +1,6 @@
 #include <iostream>
 #include <string>
 
-extern "C" {
-	#include <libavutil/version.h>
-}
-
 #include "gg.hpp"
 
 #define GG_HELP\
@@ -32,7 +28,7 @@ int main(int argc, char **argv) {
 	}
 
 	// gleebleglob client
-	GG::client client;
+	GG::Client client;
 
 	// parse command from arguments
 	std::string cmd = argv[1];
