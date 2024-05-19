@@ -11,6 +11,16 @@
 #include <time.h>
 
 #include "gg.hpp"
+#include "gg_upload_util.hpp"
+#include "gg_download_util.hpp"
+#include "gg_api_util.hpp"
+
+
+std::string GG::Client::_unix_timestamp()
+{
+	int unix_epoch = time(NULL);
+	return std::to_string(unix_epoch);
+}
 
 GG::Client::Client() {
 	char *home = getenv("HOME");
@@ -219,23 +229,24 @@ void bmp_to_ascii(const char *file_path, char *buffer, int w, int h) {
 	SDL_FreeSurface(surf);
 }
 
-int GG::Client::upload(std::string file_path, std::string pass) {
-	std::string dir_path = "/tmp/gg/";
+int GG::Client::upload(std::string file_path) {
+	std::string dir_general_path = "/tmp/gg/";
 	struct stat st;
 
-	if (stat(dir_path.c_str(), &st) != 0) {
+	if (stat(dir_general_path.c_str(), &st) != 0) {
 		// directory doesn't exist
-		mkdir(dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+		mkdir(dir_general_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
 	}
 
-	int unix_epoch = time(NULL);
-	dir_path += std::to_string(unix_epoch);
-	mkdir(dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+	_dir_path = dir_general_path;
+	std::string unix_timestamp = this->_unix_timestamp();
+	_dir_path += unix_timestamp;
+	mkdir(_dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
 
 	std::string command = "ffmpeg -hide_banner -loglevel error -i ";
 	command += file_path;
-	command += " -vf \"scale=120:40,fps=4\" ";
-	command += dir_path;
+	command += " -vf \"scale=400:200,fps=4\" ";
+	command += _dir_path;
 	command += "/%d.bmp";
 
 	int ret = system(command.c_str());
@@ -244,7 +255,78 @@ int GG::Client::upload(std::string file_path, std::string pass) {
 		return ret;
 	}
 
-	DIR *dir = opendir(dir_path.c_str());
+	// run sys command tar-balling all bmps in /tmp/gg/<unix timestamp>/*.bmp
+	command.clear();
+	command = "tar -cf ";
+	command += "/tmp/gg/";
+	command += unix_timestamp + ".tar";
+	command += " /tmp/gg/";
+	command += unix_timestamp;
+	command += "/*.bmp";
+
+	std::string tarball_path = "/tmp/gg/" + unix_timestamp + ".tar";
+
+	ret = system(command.c_str());
+	if (ret != 0) 
+	{
+		std::cerr << "Error tarballing the .bmp files" << std::endl;
+		return ret;
+	}
+
+	// open connection with server (using api key) and transfer the tarball to the server
+	// call it a day
+	if (!gg::upload_file(tarball_path))
+	{
+		std::cerr << "Error uploading .tar file to the server" << std::endl;
+		return -1;
+	}
+
+	std::string tmp = gg::network_custom("get_v");
+
+	this->_itop.insert(std::make_pair(tmp, "1234 (highly secure, don't hack us :/)"));
+
+	std::cout << "File Token: " << tmp << '\n';
+
+	return 0;
+}
+
+int GG::Client::stream(std::string token) {
+	struct stat st;
+
+	if (!this->_itop.contains(token))
+		this->_itop.insert(std::make_pair(token, "1234 (highly secure, don't hack us :/)"));
+
+	if (stat("/tmp/gg/", &st) != 0) {
+		// directory doesn't exist
+		mkdir("/tmp/gg/", S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+	}
+
+	std::string unix_timestamp = this->_unix_timestamp();
+
+	if (gg::util_download_file(token) != 0)
+	{
+		std::cerr << "Error downloading file from the server" << std::endl;
+		return -1;
+	}
+
+	this->_dir_path = "/tmp/gg/" + unix_timestamp;
+	mkdir(this->_dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+
+	// extract the files from the tarball into /tmp/gg/{unix_timestamp}
+	// tar -xvzf community_images.tar format
+	std::string command = "tar -xf /tmp/gg/";
+	command += token;
+	command += ".tar --strip-components 3 -C " + this->_dir_path;
+
+	int ret = system(command.c_str());
+	if (ret != 0) 
+	{
+		std::cerr << "Error extracting the tarball" << std::endl;
+		return ret;
+	}
+	
+	// open the directory of bmps
+	DIR *dir = opendir(this->_dir_path.c_str());
 	struct dirent *entry;
 	int num_bmps = 0;
 
@@ -256,30 +338,22 @@ int GG::Client::upload(std::string file_path, std::string pass) {
 		num_bmps++;
 	}
 
-	for (int i = 1; i <= num_bmps; i++) {
-		// fname = /tmp/gg/{unix_epoch}/{i}.bmp
-		std::string fname = dir_path + "/";
-		fname += std::to_string(i);
-		fname += ".bmp";
-
-		char buffer[(81 * 25) + 1];
-		bmp_to_ascii(fname.c_str(), buffer, 120, 40);
-		std::cout << buffer << "\n----\n" << std::endl;
-	}
-
 	closedir(dir);
 	dir = NULL;
 
+	// somehow make this a callback so it only iterates when the menu is ready for the next frame
+	for (int i = 1; i <= num_bmps; i++) {
+		// fname = /tmp/gg/{unix_epoch}/{i}.bmp
+		std::string fname = this->_dir_path + "/";
+		fname += std::to_string(i);
+		fname += ".bmp";
+
+		char buffer[(401 * 200) + 1];
+		bmp_to_ascii(fname.c_str(), buffer, 400, 200);
+		std::cout << buffer << "\n----\n" << std::endl;
+	}
+
 	std::cout << "Cleaning up" << std::endl;
-
-	return 0;
-}
-
-int GG::Client::stream(std::string token, std::string pass) {
-	std::cout
-		<< "stream\n"
-		<< "token: " << token << "\n"
-		<< "pass: " << pass << std::endl;
 
 	return 0;
 }

@@ -64,24 +64,22 @@ auto main(int argc, char **argv) -> int {
 		return 0;
 	// gg upload [file path] [password]
 	} else if (cmd == "upload") {
-		if (argc != 4) {
+		if (argc != 3) {
 			std::cout << GG_INSUFFICIENT_ARGUMENTS << std::endl;
 			return 1;
 		}
 
 		std::string file_path = argv[2];
-		std::string password = argv[3];
-		return client.upload(file_path, password);
-	// gg stream [file token] [password]
+		return client.upload(file_path);
+	// gg stream [file token] 
 	} else if (cmd == "stream") {
-		if (argc != 4) {
+		if (argc != 3) {
 			std::cout << GG_INSUFFICIENT_ARGUMENTS << std::endl;
 			return 1;
 		}
 
 		std::string file_token = argv[2];
-		std::string password = argv[3];
-		return client.stream(file_token, password);
+		return client.stream(file_token);
 	} else {
 		std::cout << GG_HELP << "\n--\nDon't know how to \"" << cmd << "\"." << std::endl;
 		return 1;

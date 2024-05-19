@@ -19,10 +19,10 @@ namespace GG {
 		// returns a string describing the current status
 		std::string status(void);
 		// uploads a video located at the given path encrypting with the given password
-		int upload(std::string file_path, std::string password);
+		int upload(std::string file_path);
 		// downloads a video from the server using the token, then streams it
 		// (either to localhost:3000 or an ASCII-ify'd form)
-		int stream(std::string token, std::string password);
+		int stream(std::string token);
 	private:
 		// home directory (gets from $HOME)
 		std::string _home;
@@ -30,6 +30,8 @@ namespace GG {
 		std::string _user;
 		// the api key with which to interact with the server
 		std::string _api_key;
+		// the path to directory containing .bmps
+		std::string _dir_path;
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
 
@@ -41,6 +43,9 @@ namespace GG {
 
 		// clear session information from a file
 		void _clear_session(std::string file_path);
+
+		// helper for getting unix timestamp
+		std::string _unix_timestamp();
 	};
 }
 
