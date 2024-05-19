@@ -20,7 +20,7 @@
 
 #define GG_INSUFFICIENT_ARGUMENTS  GG_HELP "\n--\nInsufficient arguments."
 
-int main(int argc, char **argv) {
+auto main(int argc, char **argv) -> int {
 	// if no arguments provided, assume 'help' command
 	if (argc == 1) {
 		std::cout << GG_HELP << std::endl;

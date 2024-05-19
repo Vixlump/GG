@@ -4,12 +4,6 @@
 #include <string>
 #include <unordered_map>
 
-extern "C" {
-	#include <libavcodec/avcodec.h>
-	#include <libavformat/avformat.h>
-	#include <libswscale/swscale.h>
-}
-
 namespace GG {
 	class Client {
 	public:
@@ -25,7 +19,7 @@ namespace GG {
 		// returns a string describing the current status
 		std::string status(void);
 		// uploads a video located at the given path encrypting with the given password
-		int upload(std::string path, std::string password);
+		int upload(std::string file_path, std::string password);
 		// downloads a video from the server using the token, then streams it
 		// (either to localhost:3000 or an ASCII-ify'd form)
 		int stream(std::string token, std::string password);

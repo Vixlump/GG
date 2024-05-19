@@ -4,6 +4,12 @@
 #include <utility>
 #include <cstdlib>
 
+// lovely C libraries
+#include <dirent.h>
+#include <sys/stat.h>
+#include <SDL2/SDL.h>
+#include <time.h>
+
 #include "gg.hpp"
 
 GG::Client::Client() {
@@ -174,11 +180,97 @@ std::string GG::Client::status(void) {
 	return ret;
 }
 
+void bmp_to_ascii(const char *file_path, char *buffer, int w, int h) {
+	// I'm sorry, but I'm just quite familiar with SDL
+	SDL_Surface *surf = SDL_LoadBMP(file_path);
+
+	if (surf == NULL) {
+		std::cout << "Couldn't load pixel data from file " << file_path << ".\n";
+		return;
+	}
+
+	if (surf->w != w || surf->h != h) {
+		std::cout << "Badly sized image file " << file_path << ".\n";
+		return;
+	}
+
+	int Bpp = surf->format->BytesPerPixel;
+	const char *chars = "  .:-=+*#%@@";
+
+	for (int y = 0; y < h; y++) {
+		for (int x = 0; x < w; x++) {
+			uint8_t *target_pixel = (uint8_t *)surf->pixels + y*surf->pitch + x*Bpp;
+			uint32_t pixel = *(uint32_t *)target_pixel;
+			// the following three lines assume the pixel is RGB, GBR, ...
+			int cmp1 = pixel & 0xff;
+			int cmp2 = (pixel >> 8) & 0xff;
+			int cmp3 = (pixel >> 16) & 0xff;
+			pixel = cmp1 + cmp2 + cmp3; // sum color components (<768)
+			pixel /= 64; // (<96)
+
+			*buffer++ = chars[pixel];
+		}
+
+		*buffer++ = '\n';
+	}
+
+	*buffer = '\0';
+
+	SDL_FreeSurface(surf);
+}
+
 int GG::Client::upload(std::string file_path, std::string pass) {
-	std::cout
-		<< "upload\n"
-		<< "file_path: " << file_path << "\n"
-		<< "pass: " << pass << std::endl;
+	std::string dir_path = "/tmp/gg/";
+	struct stat st;
+
+	if (stat(dir_path.c_str(), &st) != 0) {
+		// directory doesn't exist
+		mkdir(dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+	}
+
+	int unix_epoch = time(NULL);
+	dir_path += std::to_string(unix_epoch);
+	mkdir(dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+
+	std::string command = "ffmpeg -hide_banner -loglevel error -i ";
+	command += file_path;
+	command += " -vf \"scale=120:40,fps=4\" ";
+	command += dir_path;
+	command += "/%d.bmp";
+
+	int ret = system(command.c_str());
+	if (ret != 0) {
+		std::cout << "Error while running ffmpeg." << std::endl;
+		return ret;
+	}
+
+	DIR *dir = opendir(dir_path.c_str());
+	struct dirent *entry;
+	int num_bmps = 0;
+
+	while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_name[0] == '.') {
+			continue; // these aren't BMPs
+		}
+
+		num_bmps++;
+	}
+
+	for (int i = 1; i <= num_bmps; i++) {
+		// fname = /tmp/gg/{unix_epoch}/{i}.bmp
+		std::string fname = dir_path + "/";
+		fname += std::to_string(i);
+		fname += ".bmp";
+
+		char buffer[(81 * 25) + 1];
+		bmp_to_ascii(fname.c_str(), buffer, 120, 40);
+		std::cout << buffer << "\n----\n" << std::endl;
+	}
+
+	closedir(dir);
+	dir = NULL;
+
+	std::cout << "Cleaning up" << std::endl;
 
 	return 0;
 }
