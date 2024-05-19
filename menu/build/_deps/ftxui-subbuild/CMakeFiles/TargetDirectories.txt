@@ -1,3 +1,0 @@
-/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/CMakeFiles/ftxui-populate.dir
-/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/CMakeFiles/edit_cache.dir
-/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/CMakeFiles/rebuild_cache.dir
