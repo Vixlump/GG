@@ -1,0 +1,14 @@
+# Target labels
+ ftxui-populate
+# Source files and their labels
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/CMakeFiles/ftxui-populate
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/CMakeFiles/ftxui-populate.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/CMakeFiles/ftxui-populate-complete.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-build.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-configure.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-download.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-install.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-mkdir.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-patch_disconnected.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-test.rule
+/Users/saaranganand/Desktop/stormhack/GG/menu/build/_deps/ftxui-subbuild/ftxui-populate-prefix/src/ftxui-populate-stamp/ftxui-populate-update_disconnected.rule
