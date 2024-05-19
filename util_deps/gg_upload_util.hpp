@@ -86,8 +86,3 @@ bool upload_file(std::string file_name) {
 }
 
 }
-
-int main() {
-    gg::upload_file("temp.GIF");
-    return EXIT_SUCCESS;
-}
