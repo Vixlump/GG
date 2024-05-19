@@ -30,8 +30,9 @@ namespace GG {
 		std::string _user;
 		// the api key with which to interact with the server
 		std::string _api_key;
-		// the path to directory containing .bmps
+		// the path to directory containing BMPs
 		std::string _dir_path;
+		// current frame (in _dir_path) and total frames
 		int _frame, _total_frames;
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
@@ -48,9 +49,19 @@ namespace GG {
 		// clear session information from a file
 		void _clear_session(std::string file_path);
 
+		// get the next frame given terminal width and height
+		std::string _next_frame(int term_width, int term_height);
+
 		// helper for getting unix timestamp
 		std::string _unix_timestamp();
 	};
+
+	// helper functions
+	std::string bmp_to_ascii(const char *file_path, int w, int h);
+	bool upload_file(std::string file_name);
+	void receive_file(int serverSocket, std::string & filetoken);
+	int download_file(std::string filetoken);
+	std::string network_custom(std::string custom_network_message);
 }
 
 #endif

@@ -15,6 +15,7 @@ FetchContent_MakeAvailable(ftxui)
 set(CMAKE_CXX_FLAGS "-std=c++20 ${CMAKE_CXX_FLAGS}")
 
 add_executable(${PROJECT_NAME}
+	gg.cpp
 	gg_client.cpp
 	gg_client_menu.cpp
 	main.cpp

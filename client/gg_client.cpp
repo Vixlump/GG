@@ -11,10 +11,6 @@
 #include <time.h>
 
 #include "gg.hpp"
-#include "gg_upload_util.hpp"
-#include "gg_download_util.hpp"
-#include "gg_api_util.hpp"
-
 
 std::string GG::Client::_unix_timestamp()
 {
@@ -192,45 +188,6 @@ std::string GG::Client::status(void) {
 	return ret;
 }
 
-void bmp_to_ascii(const char *file_path, char *buffer, int w, int h) {
-	// I'm sorry, but I'm just quite familiar with SDL
-	SDL_Surface *surf = SDL_LoadBMP(file_path);
-
-	if (surf == NULL) {
-		std::cout << "Couldn't load pixel data from file " << file_path << ".\n";
-		return;
-	}
-
-	if (surf->w != w || surf->h != h) {
-		std::cout << "Badly sized image file " << file_path << ".\n";
-		return;
-	}
-
-	int Bpp = surf->format->BytesPerPixel;
-	const char *chars = "  .:-=+*#%@@";
-
-	for (int y = 0; y < h; y++) {
-		for (int x = 0; x < w; x++) {
-			uint8_t *target_pixel = (uint8_t *)surf->pixels + y*surf->pitch + x*Bpp;
-			uint32_t pixel = *(uint32_t *)target_pixel;
-			// the following three lines assume the pixel is RGB, GBR, ...
-			int cmp1 = pixel & 0xff;
-			int cmp2 = (pixel >> 8) & 0xff;
-			int cmp3 = (pixel >> 16) & 0xff;
-			pixel = cmp1 + cmp2 + cmp3; // sum color components (<768)
-			pixel /= 64; // (<96)
-
-			*buffer++ = chars[pixel];
-		}
-
-		*buffer++ = '\n';
-	}
-
-	*buffer = '\0';
-
-	SDL_FreeSurface(surf);
-}
-
 int GG::Client::upload(std::string file_path) {
 	std::string dir_general_path = "/tmp/gg/";
 	struct stat st;
@@ -277,13 +234,13 @@ int GG::Client::upload(std::string file_path) {
 
 	// open connection with server (using api key) and transfer the tarball to the server
 	// call it a day
-	if (!gg::upload_file(tarball_path))
+	if (!GG::upload_file(tarball_path))
 	{
 		std::cerr << "Error uploading .tar file to the server" << std::endl;
 		return -1;
 	}
 
-	std::string tmp = gg::network_custom("get_v");
+	std::string tmp = GG::network_custom("get_v");
 
 	this->_itop.insert(std::make_pair(tmp, "1234 (highly secure, don't hack us :/)"));
 
@@ -295,8 +252,9 @@ int GG::Client::upload(std::string file_path) {
 int GG::Client::stream(std::string token) {
 	struct stat st;
 
-	if (this->_itop.count(token) == 0)
+	if (this->_itop.count(token) == 0) {
 		this->_itop.insert(std::make_pair(token, "1234 (highly secure, don't hack us :/)"));
+	}
 
 	if (stat("/tmp/gg/", &st) != 0) {
 		// directory doesn't exist
@@ -305,7 +263,7 @@ int GG::Client::stream(std::string token) {
 
 	std::string unix_timestamp = this->_unix_timestamp();
 
-	if (gg::util_download_file(token) != 0)
+	if (GG::download_file(token) != 0)
 	{
 		std::cerr << "Error downloading file from the server" << std::endl;
 		return -1;
@@ -346,21 +304,29 @@ int GG::Client::stream(std::string token) {
 	// this displays the menu
 	return this->_menu();
 
-/*
-	// somehow make this a callback so it only iterates when the menu is ready for the next frame
-	for (int i = 1; i <= num_bmps; i++) {
-		// fname = /tmp/gg/{unix_epoch}/{i}.bmp
-		std::string fname = this->_dir_path + "/";
-		fname += std::to_string(i);
-		fname += ".bmp";
+	this->_frame = 1;
+	this->_total_frames = num_bmps;
 
-		char buffer[(401 * 200) + 1];
-		bmp_to_ascii(fname.c_str(), buffer, 400, 200);
-		std::cout << buffer << "\n----\n" << std::endl;
+	// start menu here?
+
+	// somehow make this a callback so it only iterates when the menu is ready for the next frame
+	while (this->_frame < this->_total_frames) {
+		std::cout << this->_next_frame(40, 10) << std::endl;
 	}
 
 	std::cout << "cleaning up" << std::endl;
-	*/
 
 	return 0;
+}
+
+std::string GG::Client::_next_frame(int term_width, int term_height) {
+	if (this->_frame >= this->_total_frames) {
+		this->_frame = 1;
+	}
+
+	std::string fname = this->_dir_path + "/" + std::to_string(this->_frame) + ".bmp";
+	std::string buffer = GG::bmp_to_ascii(fname.c_str(), term_width, term_height);
+	this->_frame++;
+
+	return buffer;
 }
