@@ -15,8 +15,13 @@ FetchContent_MakeAvailable(ftxui)
 set(CMAKE_CXX_FLAGS "-std=c++20 ${CMAKE_CXX_FLAGS}")
 
 add_executable(${PROJECT_NAME}
+	gg.cpp
 	gg_client.cpp
 	main.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PkgConfig::SDL2)
+target_link_libraries(
+	${PROJECT_NAME}
+	PRIVATE PkgConfig::SDL2
+	PRIVATE ftxui::component
+)
