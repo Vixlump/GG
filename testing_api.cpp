@@ -24,12 +24,12 @@
 
 #define loop while(true)
 
-namespace gg_test{
+namespace gg{
 
-}
 
-int main() {
-	std::string ADDRESS = "127.0.0.1";
+
+bool upload_file(std::string file_name) {
+	std::string ADDRESS = "127.0.0.1";//204.83.169.199
 	constexpr size_t BUFFER_SIZE = 1024;
 	constexpr int PORT = 25588;
 
@@ -40,7 +40,7 @@ int main() {
     //create socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         std::cout << "Socket creation error" << std::endl;
-        return -1;
+        return false;
     }
 
     serv_addr.sin_family = AF_INET;
@@ -49,21 +49,21 @@ int main() {
     //convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, ADDRESS.c_str(), &serv_addr.sin_addr) <= 0) {
         std::cout << "Invalid address/ Address not supported" << std::endl;
-        return -1;
+        return false;
     }
 
     //connect to server
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         std::cout << "Connection Failed" << std::endl;
-        return -1;
+        return false;
     }
 
     //open the file to be sent
-    std::ifstream infile("temp.GIF", std::ios::binary);
+    std::ifstream infile(file_name, std::ios::binary);
     if (!infile) {
         std::cout << "File open error" << std::endl;
         close(sock);
-        return -1;
+        return false;
     }
 
     //read from the file and send the data to the server
@@ -76,18 +76,18 @@ int main() {
         send(sock, buffer, infile.gcount(), 0);
     }
 
-    std::cout << "File sent successfully" << std::endl;
-
-    //this segment here causes a segfault fix later
-    // //receive confirmation message from server
-    // int bytes_received = read(sock, buffer, BUFFER_SIZE);
-    // if (bytes_received > 0) {
-    //     std::cout << "Server said: " << std::string(buffer, bytes_received) << std::endl;
-    // }
+    std::cout <<file_name<<" sent successfully" << std::endl;
 
     //clean up
     infile.close();
     close(sock);
 
-    return 0;
+    return true;
+}
+
+}
+
+int main() {
+    gg::upload_file("temp.GIF");
+    return EXIT_SUCCESS;
 }
