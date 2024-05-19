@@ -29,7 +29,7 @@ namespace gg{
 
 
 bool upload_file(std::string file_name) {
-	std::string ADDRESS = "127.0.0.1";//204.83.169.199
+	std::string ADDRESS = "204.83.169.199";//local port for testing 127.0.0.1
 	constexpr size_t BUFFER_SIZE = 1024;
 	constexpr int PORT = 25588;
 

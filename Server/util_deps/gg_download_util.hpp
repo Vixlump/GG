@@ -38,7 +38,7 @@ int util_download_file(std::string filename) {
 
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(PORT);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    serverAddr.sin_addr.s_addr = inet_addr("204.83.169.199");
 
     if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         std::cout << "Connection failed" << std::endl;

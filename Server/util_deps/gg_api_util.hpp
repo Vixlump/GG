@@ -22,7 +22,7 @@ namespace gg {
         struct sockaddr_in serverAddress;
         std::memset(&serverAddress, 0, sizeof(serverAddress));
         serverAddress.sin_family = AF_INET;
-        serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1"); //204.83.169.199//Server's IP address
+        serverAddress.sin_addr.s_addr = inet_addr("204.83.169.199"); //Server's IP address
         serverAddress.sin_port = htons(25587); //Server's Port
 
         //Send a message to the server
