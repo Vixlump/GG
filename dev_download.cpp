@@ -37,6 +37,6 @@ namespace gg{
 }
 
 auto main (int argc, char ** argv) -> int {
-	
+	gg::server_downloader();
 	return EXIT_SUCCESS;
 }

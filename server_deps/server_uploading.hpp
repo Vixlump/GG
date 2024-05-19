@@ -59,6 +59,13 @@ namespace gg{
             if (new_key == old_key) {
                 continue;
             }
+
+            std::ofstream outfile2;
+
+            outfile2.open("v_list.txt", std::ios_base::app); //append instead of overwrite
+            outfile2 << std::endl << new_key;
+            outfile2.close();
+
             return_message = new_key;
             old_key = new_key;
             std::ofstream outfile("archive/"+new_key, std::ios::binary);
@@ -78,11 +85,6 @@ namespace gg{
                 
             }
             outfile.close();
-            std::ofstream outfile2;
-
-            outfile2.open("v_list.txt", std::ios_base::app); //append instead of overwrite
-            outfile2 << std::endl << new_key;
-            outfile2.close();
             std::cout<<"S_Hit"<<std::endl;
 
             char client_ip[INET_ADDRSTRLEN];

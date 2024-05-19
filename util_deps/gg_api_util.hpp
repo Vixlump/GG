@@ -14,7 +14,7 @@ namespace gg {
         //Create a UDP socket
         int clientSocket = socket(AF_INET, SOCK_DGRAM, 0);
         if (clientSocket == -1) {
-            std::cerr << "Error creating socket" << std::endl;
+            std::cout << "Error creating socket" << std::endl;
             return "Error: Could Not Make A Socket To Contact Server With";
         }
 
@@ -42,7 +42,7 @@ namespace gg {
         //Process received data
         buffer[receivedBytes] = '\0';
 
-        //Close the socket
+        //Close socket
         close(clientSocket);
         return buffer;
     }
