@@ -183,7 +183,7 @@ std::string GG::Client::status(void) {
 		}
 	}
 
-	this->_menu();
+//	this->_menu();
 
 	return ret;
 }
@@ -301,18 +301,13 @@ int GG::Client::stream(std::string token) {
 	closedir(dir);
 	dir = NULL;
 	
-	// this displays the menu
-	return this->_menu();
-
+	// initialize frame counts
 	this->_frame = 1;
 	this->_total_frames = num_bmps;
 
-	// start menu here?
-
-	// somehow make this a callback so it only iterates when the menu is ready for the next frame
-	while (this->_frame < this->_total_frames) {
-		std::cout << this->_next_frame(40, 10) << std::endl;
-	}
+	// this displays the menu
+	//return this->_menu(ScreenState::VideoScreen);
+	this->_play_video(4); // 4fps
 
 	std::cout << "cleaning up" << std::endl;
 

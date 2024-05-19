@@ -4,7 +4,17 @@
 #include <string>
 #include <unordered_map>
 
+#include "ftxui/component/screen_interactive.hpp"
+
 namespace GG {
+	enum class ScreenState {
+		MainMenu,
+		DocumentationMenu,
+		FunctionMenu,
+		VideoScreen,
+		Exit
+	};
+
 	class Client {
 	public:
 		Client();
@@ -38,7 +48,13 @@ namespace GG {
 		std::unordered_map<std::string, std::string> _itop;
 
 		// the menu
-		int _menu(void);
+		int _menu(ScreenState state);
+
+		// video player
+		void _play_video(int fps);
+
+		// saarang moment
+		void _show_video_screen(ftxui::ScreenInteractive& screen, ScreenState& state);
 
 		// load session information from a file
 		void _load_session(std::string file_path);
