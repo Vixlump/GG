@@ -13,5 +13,5 @@ add_executable(menu src/menu.cpp)
 target_link_libraries(menu
   PRIVATE ftxui::screen
   PRIVATE ftxui::dom
-  PRIVATE ftxui::component # Not needed for this example.
+  PRIVATE ftxui::component
 )
