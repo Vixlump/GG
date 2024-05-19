@@ -2,6 +2,11 @@
 #define loop while(true)
 namespace gg {
 
+	std::string key_maker() {
+		std::mt19937_64 key_generator(time(nullptr));
+		return std::to_string(key_generator());
+	}
+
 	bool check_api_key(std::string input) {
 		std::ifstream key_checker("api_key_list.txt");
 		std::string key_check_storage;
@@ -14,8 +19,8 @@ namespace gg {
 	}
 
 	std::string generate_api_key() {
-		std::mt19937_64 key_generator(time(nullptr));
-		std::string api_key = std::to_string(key_generator());
+		
+		std::string api_key = "api_"+key_maker();
 		if (check_api_key(api_key)) {
 			return "0";
 		}
@@ -36,6 +41,15 @@ namespace gg {
 	    }
 	}
 
+	std::string get_v_key() {
+		std::ifstream key_checker("v_list.txt");
+		std::string key_check_storage;
+		while(std::getline(key_checker, key_check_storage)) {
+			continue;
+		}
+		return key_check_storage;
+	}
+
 	std::vector <std::string> list_o_strings;
 	std::string buffer_processor(std::string input) {
 		list_o_strings.clear();
@@ -45,6 +59,8 @@ namespace gg {
 				return generate_api_key();
 			} else if (list_o_strings[0]=="check_key"&&list_o_strings.size()>1) {
 				return std::to_string(check_api_key(list_o_strings[1]));
+			} else if (list_o_strings[0]=="get_v") {
+				return get_v_key();
 			}
 		}
 		return "0";

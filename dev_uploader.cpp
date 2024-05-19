@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include "server_deps/server_api_dispatch.hpp"
 #include "server_deps/server_uploading.hpp"
 
 #define loop while(true)

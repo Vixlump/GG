@@ -1,11 +1,10 @@
 //this
 #define loop while(true)
 namespace gg{
+
 	void upload_server_listening_loop() {
     	constexpr size_t BUFFER_SIZE = 1024;
     	constexpr int PORT = 25588;
-
-    	std::string message = "confirm_file_recived";
 
         int server_fd;
         int new_socket;
@@ -41,16 +40,28 @@ namespace gg{
 
         std::cout << "Server listening on port: " << PORT << std::endl;
 
+        std::string new_key;
+        std::string old_key;
+
+        std::string return_message;
+
         loop {
             //accept an incoming connection
             if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
                 std::cout<<"accept\n";
+                close(new_socket);
                 close(server_fd);
                 return;
             }
 
             //open file to save the received data
-            std::ofstream outfile("archive/temp.GIF", std::ios::binary);
+            new_key = "v_"+key_maker();
+            if (new_key == old_key) {
+                continue;
+            }
+            return_message = new_key;
+            old_key = new_key;
+            std::ofstream outfile("archive/"+new_key, std::ios::binary);
             if (!outfile) {
                 std::cout<<"file open\n";
                 close(new_socket);
@@ -58,18 +69,37 @@ namespace gg{
                 return;
             }
 
+
+
             //read the data from the socket and write it to the file
             int bytes_read;
-            while ((bytes_read = read(new_socket, buffer, BUFFER_SIZE)) > 0) {
+            while ((bytes_read = read(new_socket, buffer, BUFFER_SIZE)) > 1) {
                 outfile.write(buffer, bytes_read);
+                
             }
+            outfile.close();
+            std::ofstream outfile2;
+
+            outfile2.open("v_list.txt", std::ios_base::app); //append instead of overwrite
+            outfile2 << std::endl << new_key;
+            outfile2.close();
+            std::cout<<"S_Hit"<<std::endl;
 
             char client_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
-            std::cout << "File received from<"<<client_ip << ":" << ntohs(client_addr.sin_port) <<"> and saved as 'temp.GIF'" << std::endl;
+            std::cout << "File received from<"<<client_ip << ":" << ntohs(client_addr.sin_port) <<"> and saved as "<<new_key << std::endl;
+            
+            //return packet to client
+            /*if (return_message.length() > BUFFER_SIZE) {
+                return_message = "Requested data return was too large for server to process.";
+            }
+            
+            send(new_socket, return_message.c_str(), return_message.length(), 0);
+            std::cout << "Server sent response containing download key." << std::endl;
+            */
 
             //clean up
-            outfile.close();
+            
         }
             close(new_socket);
             close(server_fd);

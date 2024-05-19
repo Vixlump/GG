@@ -77,9 +77,24 @@ bool upload_file(std::string file_name) {
     }
 
     std::cout <<file_name<<" sent successfully" << std::endl;
-
-    //clean up
     infile.close();
+
+    /*// Receive the response from the server
+    char new_buffer[1024];
+    std::cout<<"Hit\n";
+    ssize_t receivedBytes = recv(sock, new_buffer, sizeof(new_buffer) - 1, 0);
+    std::cout<<"Hit2\n";
+    if (receivedBytes == -1) {
+        std::cout << "Error receiving data." << std::endl;
+        close(sock);
+        return -1;
+    }
+
+    // Null-terminate and process received data
+    new_buffer[receivedBytes] = '\0';
+    std::cout << "Received data: " << new_buffer << std::endl;
+    */
+    //clean up
     close(sock);
 
     return true;
