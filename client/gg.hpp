@@ -32,8 +32,12 @@ namespace GG {
 		std::string _api_key;
 		// the path to directory containing .bmps
 		std::string _dir_path;
+		int _frame, _total_frames;
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
+
+		// the menu
+		int _menu(void);
 
 		// load session information from a file
 		void _load_session(std::string file_path);

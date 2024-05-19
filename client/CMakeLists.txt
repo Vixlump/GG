@@ -16,7 +16,15 @@ set(CMAKE_CXX_FLAGS "-std=c++20 ${CMAKE_CXX_FLAGS}")
 
 add_executable(${PROJECT_NAME}
 	gg_client.cpp
+	gg_client_menu.cpp
 	main.cpp
+  gg_client_menu.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PkgConfig::SDL2)
+target_link_libraries(
+  ${PROJECT_NAME} 
+  PRIVATE PkgConfig::SDL2
+  PRIVATE ftxui::screen
+  PRIVATE ftxui::dom
+  PRIVATE ftxui::component
+)

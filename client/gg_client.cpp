@@ -187,6 +187,8 @@ std::string GG::Client::status(void) {
 		}
 	}
 
+	this->_menu();
+
 	return ret;
 }
 
@@ -293,7 +295,7 @@ int GG::Client::upload(std::string file_path) {
 int GG::Client::stream(std::string token) {
 	struct stat st;
 
-	if (!this->_itop.contains(token))
+	if (this->_itop.count(token) == 0)
 		this->_itop.insert(std::make_pair(token, "1234 (highly secure, don't hack us :/)"));
 
 	if (stat("/tmp/gg/", &st) != 0) {
@@ -340,7 +342,11 @@ int GG::Client::stream(std::string token) {
 
 	closedir(dir);
 	dir = NULL;
+	
+	// this displays the menu
+	return this->_menu();
 
+/*
 	// somehow make this a callback so it only iterates when the menu is ready for the next frame
 	for (int i = 1; i <= num_bmps; i++) {
 		// fname = /tmp/gg/{unix_epoch}/{i}.bmp
@@ -353,7 +359,8 @@ int GG::Client::stream(std::string token) {
 		std::cout << buffer << "\n----\n" << std::endl;
 	}
 
-	std::cout << "Cleaning up" << std::endl;
+	std::cout << "cleaning up" << std::endl;
+	*/
 
 	return 0;
 }

@@ -8,6 +8,8 @@
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
 
+#include "gg.hpp"
+
 using namespace ftxui;
 
 enum class ScreenState {
@@ -19,6 +21,8 @@ enum class ScreenState {
 };
 
 // Function to simulate frame callback
+// todo make part of GG::Client::_frame_callback
+// take this->_frame, this->_total_frames, and call this->_bmp_to_ascii(..., width, heigh)
 std::string frame_callback(int width, int height) {
     static int counter = 0;
     std::ostringstream frame;
@@ -96,7 +100,7 @@ void PlayVideo(ScreenInteractive& screen, const std::vector<std::string>& frames
     }
 }
 
-int main() {
+int GG::Client::_menu(void) {
   auto screen = ScreenInteractive::Fullscreen();
   ScreenState state = ScreenState::MainMenu;
 
