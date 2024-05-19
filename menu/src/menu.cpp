@@ -1,5 +1,10 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <thread>
+#include <chrono>
 #include "ftxui/component/captured_mouse.hpp"
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
@@ -19,6 +24,67 @@ void ShowMainMenu(ScreenInteractive& screen, ScreenState& state);
 void ShowDocumentationMenu(ScreenInteractive& screen, ScreenState& state);
 void ShowFunctionMenu(ScreenInteractive& screen, ScreenState& state, int function_selected);
 void ShowVideoScreen(ScreenInteractive& screen, ScreenState& state);
+
+// Function to read frames from file
+std::vector<std::string> ReadFramesFromFile(const std::string& filename) {
+    std::ifstream file(filename);
+    std::vector<std::string> frames;
+    std::string line;
+    std::string frame;
+    while (std::getline(file, line)) {
+        if (line == "---FRAME---") {
+            if (!frame.empty()) {
+                frames.push_back(frame);
+                frame.clear();
+            }
+        } else {
+            frame += line + "\n";
+        }
+    }
+    if (!frame.empty()) {
+        frames.push_back(frame);
+    }
+    return frames;
+}
+
+// Function to play video
+void PlayVideo(ScreenInteractive& screen, const std::vector<std::string>& frames, int fps) {
+    int frame_count = frames.size();
+    if (frame_count == 0) return;
+    int frame_duration = 1000 / fps;
+
+    bool playing = true;
+    int current_frame = 0;
+
+    auto renderer = Renderer([&] {
+        std::vector<Element> frame_elements;
+        std::istringstream frame_stream(frames[current_frame]);
+        std::string line;
+        while (std::getline(frame_stream, line)) {
+            frame_elements.push_back(text(line));
+        }
+
+        return vbox({
+            text("Video Buffer:") | underlined | center,
+            vbox(frame_elements) | border | center
+        });
+    });
+
+    std::thread video_thread([&] {
+        while (playing) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(frame_duration));
+            current_frame = (current_frame + 1) % frame_count;
+            screen.PostEvent(Event::Custom);
+        }
+    });
+
+    screen.Loop(renderer);
+    playing = false;
+    if (video_thread.joinable()) {
+        video_thread.join();
+    }
+}
+
 
 int main() {
   auto screen = ScreenInteractive::Fullscreen();
@@ -113,15 +179,53 @@ void ShowFunctionMenu(ScreenInteractive& screen, ScreenState& state, int functio
     "gg register <username>", "gg login <options> <username>", "gg logout",
     "gg upload <options> <file>", "gg stream <options> <id>", "GLBACKEP"
   };
-  std::vector<std::string> descriptions = {
-    "Description for Glegisterex", "Description for Gloginob", "Description for Glogoutob",
-    "Description for Gluploadem", "Description for Glestreamy"
-  };
+    std::vector<std::string> descriptions = {
+        R"(
+        - username: local username for this user
+        - will prompt user for a password (this will be stored locally)
+        - password is used to encrypt or hide the API key which will be used
+        - will generate a locked "~/.gg<username>" file
+        )",
+
+        R"(
+        - options:
+        -> password: -p/--password password (string)
+        - e.g.: gg login micahdbak
+        - will attempt to unlock the ~/.gg<username> file and store the decrypted api key in ~/.ggsession
+        - will prompt user for password if not provided
+        )",
+
+        R"(
+        - e.g.: gg logout
+        - will delete the ~/.ggsession file (this is not perfectly secure but stfu its fine)
+        - will store any new uploads and their passwords in the ~/.gg<username> file
+        )",
+
+        R"(
+        - options:
+        -> upload from specific timestamps: -r/--range start:end (seconds:seconds) either when left blank assumes 0:end
+        -> passkey to encrypt the file: -k/--key key (string)
+        - file:
+        -> some file to be uploaded to the server
+        - e.g.: gg upload -k secret_file ./gleeby.mp4
+        - will get session information from the ~/.ggsession file and then interact with the gg api
+        - will use ffmpeg libraries to "chunk" the given file and encrypt it using the password
+        - will prompt user for encryption key if not provided
+        )",
+
+        R"(
+        - options:
+        -> passkey to decrypt the chunks: -k/--key key (string)
+        - will get session information from the ~/.ggsession file and then interact with the gg api
+        - will prompt user for decryption key if not provided
+        )"
+    };
+
 
   auto function_name = Renderer([&] {
     return hbox({
       text("Function: ") | underlined,
-      text(functions[function_selected])
+      text(functions[function_selected]) | bgcolor(Color::CyanLight)
     }) | center;
   });
 
@@ -134,7 +238,7 @@ void ShowFunctionMenu(ScreenInteractive& screen, ScreenState& state, int functio
   auto function_description_title = text("Description: ") | underlined;
   auto function_description_content = text(descriptions[function_selected]);
   auto function_description = Renderer([&] {
-    return hbox({function_description_title, function_description_content}) | center;
+    return vbox({function_description_title, text(descriptions[function_selected])}) | center;
   });
 
   // Custom button renderer to handle focus
@@ -167,41 +271,24 @@ void ShowFunctionMenu(ScreenInteractive& screen, ScreenState& state, int functio
 }
 
 void ShowVideoScreen(ScreenInteractive& screen, ScreenState& state) {
-  std::string video_buffer = 
-    "skdfnasdlcjiasdijofioasdjcpoasdjf\n"
-    "skdfnasdlcjiasdijofioasdjcpoasdjf\n"
-    "skdfnasdlcjiasdijofioasdjcpoasdjf\n"
-    "skdfnasdlcjiasdijofioasdjcpoasdjf\n"
-    "skdfnasdlcjiasdijofioasdjcpoasdjf\n"
-    "skdfnasdlcjiasdijofioasdjcpoasdjf\n"
-    "skdfnasdlcjiasdijofioasdjcpoasdjf";
-
-  std::vector<Element> lines;
-  std::istringstream stream(video_buffer);
-  std::string line;
-  while (std::getline(stream, line)) {
-    lines.push_back(text(line));
-  }
-
-  auto video_content = Renderer([&] {
-    return vbox({
-      text("Video Buffer:") | underlined | center,
-      vbox(std::move(lines)) | border | center
+    std::vector<std::string> frames = ReadFramesFromFile("message.txt");
+    auto play_button = Button("Play Video", [&] {
+        PlayVideo(screen, frames, 4); // 4 frames per second
     });
-  });
-
-  auto back_button = Button("Back", [&] {
-    state = ScreenState::MainMenu;
-    screen.ExitLoopClosure()();
-  });
-  auto back_button_renderer = Renderer(back_button, [&] {
-    return back_button->Render() | center;
-  });
-
-  Component content = Container::Vertical({
-    video_content,
-    back_button_renderer
-  });
-
-  screen.Loop(content);
+    auto back_button = Button("Back", [&] {
+        state = ScreenState::MainMenu;
+        screen.ExitLoopClosure()();
+    });
+    auto container = Container::Vertical({
+        play_button,
+        back_button
+    });
+    auto renderer = Renderer(container, [&] {
+        return vbox({
+            text("Welcome to Video Player!") | border | center | color(Color::CyanLight),
+            play_button->Render() | center,
+            back_button->Render() | center
+        }) | center;
+    });
+    screen.Loop(renderer);
 }
