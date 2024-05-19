@@ -146,12 +146,30 @@ void ShowMainMenu(ScreenInteractive& screen, ScreenState& state) {
 
   auto menu = Menu(&entries, &selected, menu_option);
 
+  // Add the ASCII art to the menu renderer
   Component renderer = Renderer(menu, [&] {
     return vbox({
+      text("o            o") | center,
+      text(" \\          / ") | center,
+      text("  \\        /  ") | center,
+      text("    :-'""'-:    ") | center,
+      text(" .-'  ____  `-. ") | center,
+      text("( (  (_()_)  ) )") | center,
+      text(" `-.   ^^   .-' ") | center,
+      text("    `._==_.'    ") | center,
+      text("    ___)(___    ") | center,
       text("Welcome to GLEEBLEGLOB!") | border | center | color(Color::CyanLight),
       menu->Render() | border,
     }) | center;
   });
+
+
+  // Component renderer = Renderer(menu, [&] {
+  //   return vbox({
+  //     text("Welcome to GLEEBLEGLOB!") | border | center | color(Color::CyanLight),
+  //     menu->Render() | border,
+  //   }) | center;
+  // });
 
   screen.Loop(renderer);
 }
