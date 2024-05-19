@@ -2,10 +2,58 @@
 #define loop while(true)
 namespace gg {
 
+	bool check_api_key(std::string input) {
+		std::ifstream key_checker("api_key_list.txt");
+		std::string key_check_storage;
+		while(std::getline(key_checker, key_check_storage)) {
+			if (key_check_storage==input) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	std::string generate_api_key() {
+		std::mt19937_64 key_generator(time(nullptr));
+		std::string api_key = std::to_string(key_generator());
+		if (check_api_key(api_key)) {
+			return "0";
+		}
+		std::ofstream outfile;
+
+		outfile.open("api_key_list.txt", std::ios_base::app); //append instead of overwrite
+		outfile << std::endl << api_key;
+		outfile.close();
+		return api_key;
+	}
+
+	void parse_string(std::string input, std::vector <std::string> &parced_list, char delimiter) {
+	    std::istringstream stream(input);
+	    std::string token;
+	    
+	    while (std::getline(stream, token, delimiter)) {
+	        parced_list.push_back(token);
+	    }
+	}
+
+	std::vector <std::string> list_o_strings;
+	std::string buffer_processor(std::string input) {
+		list_o_strings.clear();
+		parse_string(input, list_o_strings, ';');
+		if (list_o_strings.size()>0) {
+			if (list_o_strings[0]=="request") {
+				return generate_api_key();
+			} else if (list_o_strings[0]=="check_key"&&list_o_strings.size()>1) {
+				return std::to_string(check_api_key(list_o_strings[1]));
+			}
+		}
+		return "0";
+	}
+
 	void api_disptch_listener() {
 		//Setup
-		const int PORT = 25542;//port for development remember to switch back for deployment
-		const int BUFFER_SIZE = 1024;//if you find the buffer too small change this number
+		constexpr int PORT = 25587;
+		constexpr int BUFFER_SIZE = 1024;
 		int sockfd;
 	    char buffer[BUFFER_SIZE];
 	    std::string buffer_manager;//string type to allow easier buffer parcing and management
@@ -54,8 +102,8 @@ namespace gg {
 	        return_message = buffer_processor(buffer_manager);
 
 	        //Send response back --------------------------------------------------------------
-	        if (return_message.length()>1000) {
-	        	return_message == "Requested data return was too large for server to process.";
+	        if (return_message.length()>1024) {
+	        	return_message = "Requested data return was too large for server to process.";
 	        }
 	        sendto(sockfd, return_message.c_str(), return_message.length(), 0,
 	               (struct sockaddr *)&clientAddr, clientLen);
@@ -65,11 +113,5 @@ namespace gg {
 	    close(sockfd);
 	    return;
 	}
-
-	std::string generate_api_key() {
-
-	}
-	bool check_api_key() {
-
-	}
+	
 }
