@@ -3,6 +3,11 @@
 	<head>
 		<title>GleebleGlob.Club</title>
 		<link rel="icon" type="image/png" href="/favicon.png">
+		<style>
+li.mono {
+	font-family: monospace;
+}
+		</style>
 	</head>
 	<body>
 		<img src="/banner.png" height="64" alt="GleebleGlob"/>
@@ -10,10 +15,12 @@
 		<h2>Home of GG CLI & API</h2>
 		<hr />
 		<h3>Contents</h3>
-		<a href="#1">GleebleGlob</a>
-		<a href="#2">StormHacks Track: Social / Connectivity</a>
-		<a href="#3">Usage</a>
-		<a href="#4">Installation</a>
+		<ol>
+			<li><a href="#1">GleebleGlob</a></li>
+			<li><a href="#2">StormHacks Track: Social / Connectivity</a></li>
+			<li><a href="#3">Usage</a></li>
+			<li><a href="#4">Installation</a></li>
+		</ol>
 		<hr />
 		<h3 id="1">GleebleGlob</h3>
 		<p>GleebleGlob is something we came up because it was funny - it doesn't mean anything.</p>
@@ -21,15 +28,79 @@
 		<p>To describe GleebleGlob, I'm going to use its initialism rather than its expanded form: GG.</p>
 		<p>The domain however, we will always argue, is the greatest domain known to humanity.</p>
 		<p>(Good luck remembering it, as we've all gone through mistakes of geebleglop, beegleblog, gooblegleb, ...)</p>
+		<hr />
 		<h3 id="2">StormHacks Track: Social / Connectivity</h3>
 		<p>GG fits into the Social / Connectivity track of the <a href="https://stormhacks.com">SFU Surge StormHacks 2024 Hackathon</a>, which GG was created during/for.</p>
 		<p>But... what does GG do in this track?</p>
-		<p>To put it simply, GG enhances your **social** experience in the terminal, with digital **connectivity** in the form of **video sharing** among friends.</p>
+		<p>To put it simply, GG enhances your <b>social</b> experience in the terminal, with digital <b>connectivity</b> in the form of convenient video sharing among friends.</p>
 		<p>GG is like YouTube, but for private videos shared among your friends, and viewed entirely from the terminal, in ASCII.</p>
 		<p>Yeah, that's right, friggin' ASCII.</p>
-		<p>Here's a snapshot of the author's of GG, generated with GG:</p>
+		<p>Here's a frame of a video of the authors of GG, generated with GG, printed in ASCII, and scaled by nearest-neighbour to the screen size of a VT100 (80 chars by 25 chars):</p>
+		<pre style="background-color: black; color: white; width: 80ch;">
+==+=====-=-==-====++++====+++++++++++++=:..  ..=++==++==+=======================
+++++===---===++++++++******+***++**++*:         .+++++++++++++++=====+++++++++++
+++========+*****+====+**+***********+:.     ..    ++**+++++++++++=-----=++++++++
+======+*********::::::***********#@@*. ..         =**************::....:########
+===++**########*--:::*######%%%%%%%%%%.-::-:....-%%%%%%%####%%%%#*-:::::########
+++*####%%%%%%%%%#:::%%%%%%%%%%%%%%%%%%%=:......=%%%%%%%%##%%@@@@%##-...*########
+:..  ...=##%%%%#*::.+%%%%%%%%%%+--:::::::::....%%%%%%%%%%%%%%%%%###.   :##=-..  
+====    ....##%.    .%%%%%%%%*-.:     .:.::-   .%%%%%%%#%%%%%%%###*   .:...     
++*++++-:     :##     -%%%%%%-. ..     .....:::  ....-::=+++++++++=. ::.....     
+===+++=--:    .#:     %@@@@%:..    ..:-:...:::             +*****..:......      
+===++++*+::.   =*     .%*=+::..:.-======---...                .-     .  ...::::.
+==++++++=-::   .%.           :+-=--===::::-=                           .:----:--
+++++++==--:.   =%@.         .:+=--=--:=--==-=*++.                     .:.   :-==
++++++=---:.   .=##@%%*=      ==*===-+=:-=++=+*+=:                 .     ..:-=+++
++++===-::.    :%%@%@@%%@@@*##++==-==------=++++=.         %%%%%@@@%%%.=.==++++**
+++===--:       =#@@@%@@@@@*#%#.===.=+*=:====+===:         @@@@@@@%%%%#:+++++****
++++==-:-       -#@@%%%@@@@*#%#  =========--=====-         @@@%%%%%%%%%%+++******
++++=-:       ..-%@@@@%@@@@@@@@. +==++===--==++=-:         *#+%%%%%%%%%##*******+
+++=-:. =       =%%@@@%%@@%##%*##+==-:::--=====--:        ####*#%%%%##**#******++
+==-.  ---    -=%@@@@@%%@@%#++-+=+======--==:==---:       *=+**#%##*#####**+++++=
+-:..  :: .  =#%-=-==---===-=:----=======--=:=++-.       .%.+%%#**##****++++==--:
+-:    :. . .#----=-------==:-=+------===----=++=+**=    +%:-#*###***+++=-::.:...
+-:     :.:::-----:::::---:::-----------::::-=---=++++*+*.:=*####*++++=-::.      
+-=.    ..::-+**=-:::.::::::--------------:------=====:  .+**##**++==-:.         
+--=.   :- =+++*+==:..::::::-:----------:--:::---==.     .=****+++==:.           </pre>
+		<hr />
+		<h3 id="3">Usage</h3>
+		<p>As mentioned, GG is meant to be utilized via the terminal.</p>
+		<p>Here is the usage information as given by the command <span style="font-family: monospace">gg help</span>:</p>
 		<pre>
-
-		</pre>
+gg - v0.1 - [g]leeble[g]lob command line interface.
+Check out https://gleebleglob.club for service information.
+GENERAL USAGE:
+        gg [command] [...arguments]
+        NOTE: excess arguments will be ignored.
+COMMANDS:
+        gg help
+        gg register [username]
+        gg login [username]
+        gg logout
+        gg status
+        gg upload [file path] [password]
+        gg stream [file token] [password]</pre>
+		<p>It should be noted that GG keeps track of your current session (previously uploaded and streamed videos) in ~/.ggsession and ~/.gg{user} files.</p>
+		<p>To check and see if you are currently logged in, simply run <span style="font-family: monospace">gg status</span>.</p>
+		<hr />
+		<h3 id="4">Installation</h3>
+		<p>To install GG, you'll need to compile the source code on your machine.</p>
+		<p>This has been thoroughly tested for MacOS, and minorly tested for Linux (don't trust us on that though).</p>
+		<p>You will need to install the following dependencies, either with homebrew, apt, or another package manager:</p>
+		<ul>
+			<li>CMake (the C/C++ compilation toolset)</li>
+			<li>FFmpeg (the command-line utility)</li>
+			<li>SDL2 (the cross-platform C/C++ windowing library)</li>
+		</ul>
+		<p>With these dependencies installed properly, clone the source code <u>here</u>, and run the following commands in order:</p>
+		<ol>
+			<li class="mono">cd GG</li>
+			<li class="mono">cd client</li>
+			<li class="mono">cmake -S . -B build</li>
+			<li class="mono">./build.sh</li>
+			<li class="mono">sudo cp build/gg /usr/local/bin/gg</li>
+		</ol>
+		<p>After which, the <span style="font-family: monospace">gg</span> command utility will be available from your terminal.</p>
+		<p>Read the <a href="#3">Usage</a> section for more information on how to use GG as a CLI.</p>
 	</body>
 </html>
