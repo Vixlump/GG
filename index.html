@@ -82,16 +82,21 @@ COMMANDS:
         gg stream [file token] [password]</pre>
 		<p>It should be noted that GG keeps track of your current session (previously uploaded and streamed videos) in ~/.ggsession and ~/.gg{user} files.</p>
 		<p>To check and see if you are currently logged in, simply run <span style="font-family: monospace">gg status</span>.</p>
+		<p>It should be noted that [file path] must refer to a video file, and that [file token] will be provided upon successful uploading of a given file.</p>
+		<p>You can share the file token given by the upload command with your friends on different machines, as GG interacts with a GG API to store and stream video data.</p>
+		<p><i>Remember, like YouTube, but on the CLI!</i></p>
 		<hr />
 		<h3 id="4">Installation</h3>
-		<p>To install GG, you'll need to compile the source code on your machine.</p>
-		<p>This has been thoroughly tested for MacOS, and minorly tested for Linux (don't trust us on that though).</p>
+		<p>To install GG, you'll need to compile the C++ source code for the client on your machine.</p>
+		<p>The GG API is currently deployed to api.gleebleglob.club, and the client will automatically connect to this API.</p>
+		<p>Compiling and using the client has been thoroughly tested on MacOS, and minorly tested for Linux (don't trust us on that though - venture at your own risk).</p>
 		<p>You will need to install the following dependencies, either with homebrew, apt, or another package manager:</p>
 		<ul>
 			<li>CMake (the C/C++ compilation toolset)</li>
 			<li>FFmpeg (the command-line utility)</li>
 			<li>SDL2 (the cross-platform C/C++ windowing library)</li>
 		</ul>
+		<p>Networking is accomplished with BSD Sockets, which is provided by any POSIX-compliant OS (such as MacOS and Linux), so no additional dependencies need be installed for that.</p>
 		<p>With these dependencies installed properly, clone the source code <u>here</u>, and run the following commands in order:</p>
 		<ol>
 			<li class="mono">cd GG</li>
