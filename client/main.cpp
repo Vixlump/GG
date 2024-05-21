@@ -2,23 +2,25 @@
 #include <string>
 
 #include "gg.hpp"
+#include "version.hpp"
 
-#define GG_HELP\
-	"gg - v0.1 - [g]leeble[g]lob command line interface.\n"\
-	"Check out https://gleebleglob.club for service information.\n"\
-	"GENERAL USAGE:\n"\
-	"\tgg [command] [...arguments]\n"\
-	"\tNOTE: excess arguments will be ignored.\n"\
-	"COMMANDS:\n"\
-	"\tgg help\n"\
-	"\tgg register [username]\n"\
-	"\tgg login [username]\n"\
-	"\tgg logout\n"\
-	"\tgg status\n"\
-	"\tgg upload [file path] [password]\n"\
-	"\tgg stream [file token] [password]"
+std::string GG_HELP =
+	"gg - "+GG::version+" - [g]leeble[g]lob command line interface.\n"+
+	"Check out https://gleebleglob.club for service information.\n"+
+	"GENERAL USAGE:\n"+
+	"\tgg [command] [...arguments]\n"+
+	"\tNOTE: excess arguments will be ignored.\n"+
+	"COMMANDS:\n"+
+	"\tgg help\n"+
+	"\tgg version\n"+
+	"\tgg register [username]\n"+
+	"\tgg login [username]\n"+
+	"\tgg logout\n"+
+	"\tgg status\n"+
+	"\tgg upload [file path] [password]\n"+
+	"\tgg stream [file token] [password]";
 
-#define GG_INSUFFICIENT_ARGUMENTS  GG_HELP "\n--\nInsufficient arguments."
+std::string GG_INSUFFICIENT_ARGUMENTS= GG_HELP+"\n--\nInsufficient arguments.";
 
 auto main(int argc, char **argv) -> int {
 	// if no arguments provided, assume 'help' command
@@ -80,6 +82,8 @@ auto main(int argc, char **argv) -> int {
 
 		std::string file_token = argv[2];
 		return client.stream(file_token);
+	} else if (cmd == "version") {
+		std::cout<<GG::version<<std::endl;
 	} else {
 		std::cout << GG_HELP << "\n--\nDon't know how to \"" << cmd << "\"." << std::endl;
 		return 1;
