@@ -24,6 +24,8 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 		return buffer;
 	}
 
+	int og_w = w, og_h = h;
+
 	if (w > surf->w) {
 		w = surf->w;
 	}
@@ -33,13 +35,26 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 	}
 
 	int Bpp = surf->format->BytesPerPixel;
-	const char *chars = "  .-:=+*#%@@";
+	const char *chars = "  .-:=+*%#@@";
 	float ystep = (float)surf->h / (float)h;
 	float xstep = (float)surf->w / (float)w;
 	int line_length, height = 0;
 
+	int paddingy, paddingl;
+
+	paddingy = og_h - h > 0 ? (og_h - h) / 2 : 0;
+	paddingl = og_w - w > 0 ? (og_w - w) / 2 : 0;
+
+	for (int i = 0; i < paddingy; i++) {
+		buffer += '\n';
+	}
+
 	for (float yf = 0; (int)yf < surf->h; yf += ystep) {
 		line_length = 0;
+
+		for (int i = 0; i < paddingl; i++) {
+			buffer += ' ';
+		}
 
 		for (float xf = 0; (int)xf < surf->w; xf += xstep) {
 			// int approx. (nearest neighbour)
@@ -71,6 +86,10 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 		if (height == h) {
 			break;
 		}
+	}
+
+	for (int i = 0; i < paddingy - 1; i++) {
+		buffer += '\n';
 	}
 
 	SDL_FreeSurface(surf);
@@ -129,8 +148,6 @@ bool GG::upload_file(std::string file_name) {
 
 	//send any remaining data
 	if (infile.gcount() > 0) {
-		std::cout << ".";
-		fflush(stdout);
 		send(sock, buffer, infile.gcount(), 0);
 	}
 
@@ -154,7 +171,7 @@ bool GG::upload_file(std::string file_name) {
 	//clean up
 	close(sock);
 
-	std::cout << std::endl;
+	std::cout << "\nDone sending frames." << std::endl;
 	return true;
 }
 
