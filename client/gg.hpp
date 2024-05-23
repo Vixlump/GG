@@ -1,12 +1,36 @@
 #ifndef GG_HPP
 #define GG_HPP
 
+#include <cstdint>
+#include <fstream>
 #include <string>
 #include <unordered_map>
 
 #include "ftxui/component/screen_interactive.hpp"
 
-namespace GG {
+inline void debug_log(std::string contents) {
+	std::ofstream file;
+	file.open("log.txt", std::ios_base::app);
+	file << contents;
+	file.close();
+}
+
+// the formatting needed to describe a single unit of the terminal screen. 
+// "a pixel", but not. "a character", but not. both!
+struct CharFormat {
+	uint8_t fg_color_index; // this is an index into the xterm_colours array
+	uint8_t bg_color_index;
+	uint8_t char_index;
+};
+
+// contains all the buffers needed to render a screen.
+struct RenderableScreenBuffer {
+	std::string char_buffer;
+	std::vector<ftxui::Color> fg_colour_buffer;
+	std::vector<ftxui::Color> bg_colour_buffer;
+};
+
+namespace GG {	
 	enum class ScreenState {
 		MainMenu,
 		DocumentationMenu,
@@ -47,6 +71,9 @@ namespace GG {
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
 
+		// for rendering coloured ascii :)
+		bool _terminal_supports_colour;
+
 		// the menu
 		int _menu(ScreenState state);
 
@@ -66,14 +93,20 @@ namespace GG {
 		void _clear_session(std::string file_path);
 
 		// get the next frame given terminal width and height
-		std::string _next_frame(int term_width, int term_height);
+		RenderableScreenBuffer _next_frame(int term_width, int term_height, CharFormat *colour_lookup_table);
 
 		// helper for getting unix timestamp
 		std::string _unix_timestamp();
 	};
-
+	
 	// helper functions
-	std::string bmp_to_ascii(const char *file_path, int w, int h);
+	RenderableScreenBuffer bmp_to_ascii(
+		const char *file_path,
+		int w,
+		int h,
+		bool enable_colour,
+		CharFormat *colour_lookup_table
+	);
 	bool upload_file(std::string file_name);
 	void receive_file(int serverSocket, std::string & filetoken);
 	int download_file(std::string filetoken);

@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <cstdlib>
@@ -10,10 +11,28 @@
 #include <SDL2/SDL.h>
 #include <time.h>
 
+#include "ftxui/component/screen_interactive.hpp"
+
 #include "gg.hpp"
 
-std::string GG::Client::_unix_timestamp()
-{
+// for getting stdout from terminal commands
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+
+    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+
+    return result;
+}
+
+std::string GG::Client::_unix_timestamp() {
 	int unix_epoch = time(NULL);
 	return std::to_string(unix_epoch);
 }
@@ -22,6 +41,10 @@ GG::Client::Client() {
 	char *home = getenv("HOME");
 	this->_home = home == NULL ? "." : home;
 	this->_load_session(this->_home + "/.ggsession");
+
+	// for tput see https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/tput.html
+	//long num_colours = std::strtol(exec("tput colors").c_str(), nullptr, 10);
+	//this->_terminal_supports_colour = (num_colours >= 8);
 }
 
 GG::Client::~Client() {
@@ -46,7 +69,7 @@ void GG::Client::_load_session(std::string file_path) {
 	// read every line from the file as lines in the form "key:value"
 	while (session_file.good()) {
 		std::getline(session_file, line);
-		int colon_index = line.find(":");
+		size_t colon_index = line.find(":");
 
 		if (colon_index == std::string::npos) {
 			continue; // bad line
@@ -307,6 +330,7 @@ int GG::Client::stream(std::string token) {
 
 	// this displays the menu
 	//return this->_menu(ScreenState::VideoScreen);
+
 	this->_play_video(4); // 4fps
 
 	std::cout << "cleaning up" << std::endl;
@@ -314,13 +338,19 @@ int GG::Client::stream(std::string token) {
 	return 0;
 }
 
-std::string GG::Client::_next_frame(int term_width, int term_height) {
+RenderableScreenBuffer GG::Client::_next_frame(int term_width, int term_height, CharFormat *colour_lookup_table) {
 	if (this->_frame >= this->_total_frames) {
 		this->_frame = 1;
 	}
 
 	std::string fname = this->_dir_path + "/" + std::to_string(this->_frame) + ".bmp";
-	std::string buffer = GG::bmp_to_ascii(fname.c_str(), term_width, term_height);
+	RenderableScreenBuffer buffer = GG::bmp_to_ascii(
+		fname.c_str(), 
+		term_width, 
+		term_height, 
+		this->_terminal_supports_colour, 
+		colour_lookup_table
+	);
 	this->_frame++;
 
 	return buffer;
