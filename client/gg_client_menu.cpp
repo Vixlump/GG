@@ -5,120 +5,13 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+
 #include "ftxui/component/component.hpp"
 // imported in gg.hpp: #include "ftxui/component/screen_interactive.hpp"
 
 #include "gg.hpp"
 
 using namespace ftxui;
-
-// Function to simulate frame callback
-// todo make part of GG::Client::_frame_callback
-// take this->_frame, this->_total_frames, and call this->_bmp_to_ascii(..., width, heigh)
-std::string frame_callback(int width, int height) {
-    static int counter = 0;
-    std::ostringstream frame;
-    frame << "Frame " << counter++ << "\n";
-    for (int i = 0; i < height - 1; ++i) {
-        for (int j = 0; j < width; ++j) {
-            frame << ((i + j + counter) % 2 == 0 ? '#' : ' ');
-        }
-        frame << "\n";
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(250)); // Simulate frame generation delay
-    return frame.str();
-}
-
-void ShowMainMenu(ScreenInteractive& screen, GG::ScreenState& state);
-void ShowDocumentationMenu(ScreenInteractive& screen, GG::ScreenState& state);
-void ShowFunctionMenu(ScreenInteractive& screen, GG::ScreenState& state, int function_selected);
-//void ShowVideoScreen(ScreenInteractive& screen, GG::ScreenState& state);
-
-// Function to read frames from file
-std::vector<std::string> ReadFramesFromFile(const std::string& filename) {
-    std::ifstream file(filename);
-    std::vector<std::string> frames;
-    std::string line;
-    std::string frame;
-    while (std::getline(file, line)) {
-        if (line == "---FRAME---") {
-            if (!frame.empty()) {
-                frames.push_back(frame);
-                frame.clear();
-            }
-        } else {
-            frame += line + "\n";
-        }
-    }
-    if (!frame.empty()) {
-        frames.push_back(frame);
-    }
-    return frames;
-}
-
-// Function to play video
-void GG::Client::_play_video(int fps) {
-  auto screen = ScreenInteractive::Fullscreen();
-    int frame_duration = 1000 / fps;
-
-    bool playing = true;
-
-    auto renderer = Renderer([&] {
-        std::vector<Element> frame_elements;
-        std::string ascii_rep = this->_next_frame(80, 25);
-        while (ascii_rep.size() > 0) {
-          int newline_pos = ascii_rep.find("\n");
-          std::string line = ascii_rep.substr(0, newline_pos);
-          ascii_rep = ascii_rep.substr(newline_pos + 1);
-          frame_elements.push_back(text(line));
-        }
-
-        return vbox({
-            text("Video Buffer:") | underlined | center,
-            vbox(frame_elements) | border | center
-        });
-    });
-
-    std::thread video_thread([&] {
-        while (playing) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(frame_duration));
-            screen.PostEvent(Event::Custom);
-        }
-    });
-
-    screen.Loop(renderer);
-    playing = false;
-    if (video_thread.joinable()) {
-        video_thread.join();
-    }
-}
-
-int GG::Client::_menu(GG::ScreenState state) {
-  auto screen = ScreenInteractive::Fullscreen();
-  //GG::ScreenState state = GG::ScreenState::MainMenu;
-
-  while (state != GG::ScreenState::Exit) {
-    switch (state) {
-      case GG::ScreenState::MainMenu:
-        ShowMainMenu(screen, state);
-        break;
-      case GG::ScreenState::DocumentationMenu:
-        ShowDocumentationMenu(screen, state);
-        break;
-      case GG::ScreenState::FunctionMenu:
-        // This case is handled within ShowDocumentationMenu, so it's not needed here.
-        break;
-      case GG::ScreenState::VideoScreen:
-        this->_play_video(4);
-        //this->_show_video_screen(screen, state);
-        break;
-      default:
-        break;
-    }
-  }
-
-  return 0;
-}
 
 void ShowMainMenu(ScreenInteractive& screen, GG::ScreenState& state) {
   std::vector<std::string> entries = {"Glegisterex", "Gloginob", "Glocumentationeb", "Play Video", "GLEXITEL"};
@@ -132,9 +25,6 @@ void ShowMainMenu(ScreenInteractive& screen, GG::ScreenState& state) {
       // Handle login
     } else if (entries[selected] == "Glocumentationeb") {
       state = GG::ScreenState::DocumentationMenu;
-      screen.ExitLoopClosure()();
-    } else if (entries[selected] == "Play Video") {
-      state = GG::ScreenState::VideoScreen;
       screen.ExitLoopClosure()();
     } else if (entries[selected] == "GLEXITEL") {
       state = GG::ScreenState::Exit;
@@ -170,33 +60,6 @@ void ShowMainMenu(ScreenInteractive& screen, GG::ScreenState& state) {
   // });
 
   screen.Loop(renderer);
-}
-
-void ShowDocumentationMenu(ScreenInteractive& screen, GG::ScreenState& state) {
-  std::vector<std::string> functions = {"Glegisterex", "Gloginob", "Glogoutob", "Gluploadem", "Glestreamy", "GLBACKEP"};
-
-  int function_selected = 0;
-
-  auto function_menu_option = MenuOption();
-  function_menu_option.on_enter = [&] {
-    if (functions[function_selected] != "GLBACKEP") {
-      ShowFunctionMenu(screen, state, function_selected);
-    } else {
-      state = GG::ScreenState::MainMenu;
-      screen.ExitLoopClosure()();
-    }
-  };
-
-  auto function_menu = Menu(&functions, &function_selected, function_menu_option);
-
-  Component function_renderer = Renderer(function_menu, [&] {
-    return vbox({
-      text("GLOCUMENTATIONEB!!!") | border | center | color(Color::CyanLight),
-      function_menu->Render() | border,
-    }) | center;
-  });
-
-  screen.Loop(function_renderer);
 }
 
 void ShowFunctionMenu(ScreenInteractive& screen, GG::ScreenState& state, int function_selected) {
@@ -296,27 +159,52 @@ void ShowFunctionMenu(ScreenInteractive& screen, GG::ScreenState& state, int fun
   screen.Loop(container);
 }
 
-void GG::Client::_show_video_screen(ScreenInteractive& screen, GG::ScreenState& state) {
-    std::vector<std::string> frames = ReadFramesFromFile("message.txt");
-    auto play_button = Button("Play Video", [&] {
-      if (!frames.empty()) {
-        this->_play_video(4); // 4 frames per second
-      }
-    });
-    auto back_button = Button("Back", [&] {
+void ShowDocumentationMenu(ScreenInteractive& screen, GG::ScreenState& state) {
+  std::vector<std::string> functions = {"Glegisterex", "Gloginob", "Glogoutob", "Gluploadem", "Glestreamy", "GLBACKEP"};
+
+  int function_selected = 0;
+
+  auto function_menu_option = MenuOption();
+  function_menu_option.on_enter = [&] {
+    if (functions[function_selected] != "GLBACKEP") {
+      ShowFunctionMenu(screen, state, function_selected);
+    } else {
       state = GG::ScreenState::MainMenu;
       screen.ExitLoopClosure()();
-    });
-    auto container = Container::Vertical({
-      play_button,
-      back_button
-    });
-    auto renderer = Renderer(container, [&] {
-        return vbox({
-            text("Welcome to Video Player!") | border | center | color(Color::CyanLight),
-            play_button->Render() | center,
-            back_button->Render() | center
-        }) | center;
-    });
-    screen.Loop(renderer);
+    }
+  };
+
+  auto function_menu = Menu(&functions, &function_selected, function_menu_option);
+
+  Component function_renderer = Renderer(function_menu, [&] {
+    return vbox({
+      text("GLOCUMENTATIONEB!!!") | border | center | color(Color::CyanLight),
+      function_menu->Render() | border,
+    }) | center;
+  });
+
+  screen.Loop(function_renderer);
+}
+
+int GG::Client::_menu(GG::ScreenState state) {
+  auto screen = ScreenInteractive::Fullscreen();
+  //GG::ScreenState state = GG::ScreenState::MainMenu;
+
+  while (state != GG::ScreenState::Exit) {
+    switch (state) {
+      case GG::ScreenState::MainMenu:
+        ShowMainMenu(screen, state);
+        break;
+      case GG::ScreenState::DocumentationMenu:
+        ShowDocumentationMenu(screen, state);
+        break;
+      case GG::ScreenState::FunctionMenu:
+        // This case is handled within ShowDocumentationMenu, so it's not needed here.
+        break;
+      default:
+        break;
+    }
+  }
+
+  return 0;
 }

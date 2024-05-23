@@ -7,11 +7,11 @@
 #include "ftxui/component/screen_interactive.hpp"
 
 namespace GG {
+	// for ftxui
 	enum class ScreenState {
 		MainMenu,
 		DocumentationMenu,
 		FunctionMenu,
-		VideoScreen,
 		Exit
 	};
 
@@ -38,44 +38,32 @@ namespace GG {
 		std::string _home;
 		// the current user name (for ~/.gg{user})
 		std::string _user;
-		// the api key with which to interact with the server
+		// api key for interaction with the server (not used ATM)
 		std::string _api_key;
 		// the path to directory containing BMPs
-		std::string _dir_path;
-		// current frame (in _dir_path) and total frames
-		int _frame, _total_frames;
+		std::string _bmp_dir;
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
 
-		// the menu
-		int _menu(ScreenState state);
-
-		// video player
-		void _play_video(int fps);
-
-		// saarang moment
-		void _show_video_screen(ftxui::ScreenInteractive& screen, ScreenState& state);
-
 		// load session information from a file
 		void _load_session(std::string file_path);
-
 		// save session information to a file
 		void _save_session(std::string file_path);
-
 		// clear session information from a file
 		void _clear_session(std::string file_path);
-
-		// get the next frame given terminal width and height
-		std::string _next_frame(int term_width, int term_height);
-
 		// helper for getting unix timestamp
 		std::string _unix_timestamp();
+
+		// the menu
+		int _menu(ScreenState state);
 	};
 
-	// helper functions
-	std::string bmp_to_ascii(const char *file_path, int w, int h);
+	// load a given bitmap image, then return a printable version of the image
+	std::string bmp_to_ascii(const char *file_path, int cols, int lines);
+
+	// server helper functions
 	bool upload_file(std::string file_name);
-	void receive_file(int serverSocket, std::string & filetoken);
+	void receive_file(int serverSocket, std::string& filetoken);
 	int download_file(std::string filetoken);
 	std::string network_custom(std::string custom_network_message);
 }

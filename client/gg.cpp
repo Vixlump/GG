@@ -2,20 +2,8 @@
 #include <string>
 #include <cstring>
 #include <fstream>
-#include <sstream>
-#include <string>
-#include <cmath>
-#include <cstdint>
 #include <cstdlib>
-#include <vector>
-#include <deque>
-#include <chrono>
-#include <ctime>
 #include <iomanip>
-#include <algorithm>
-#include <filesystem>
-#include <functional>
-#include <map>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -26,12 +14,10 @@
 
 #include "gg.hpp"
 
-#define loop while(true)
-
 std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 	// I'm sorry, but I'm just quite familiar with SDL
 	SDL_Surface *surf = SDL_LoadBMP(file_path);
-	std::string buffer;
+	std::string buffer = "";
 
 	if (surf == NULL) {
 		std::cout << "Couldn't load pixel data from file " << file_path << ".\n";
@@ -47,7 +33,7 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 	}
 
 	int Bpp = surf->format->BytesPerPixel;
-	const char *chars = "  .:-=+*#%@@";
+	const char *chars = "  .-:=+*#%@@";
 	float ystep = (float)surf->h / (float)h;
 	float xstep = (float)surf->w / (float)w;
 	int line_length, height = 0;
@@ -121,25 +107,33 @@ bool GG::upload_file(std::string file_name) {
 		return false;
 	}
 
+	std::cout << "Connected to server." << std::endl;
+
 	//open the file to be sent
 	std::ifstream infile(file_name, std::ios::binary);
-	if (!infile) {
+	if (!infile.is_open()) {
 		std::cout << "File open error" << std::endl;
 		close(sock);
 		return false;
 	}
 
+	std::cout << "Sending frames";
+	fflush(stdout);
+
 	//read from the file and send the data to the server
 	while (infile.read(buffer, BUFFER_SIZE)) {
+		std::cout << ".";
+		fflush(stdout);
 		send(sock, buffer, infile.gcount(), 0);
 	}
 
 	//send any remaining data
 	if (infile.gcount() > 0) {
+		std::cout << ".";
+		fflush(stdout);
 		send(sock, buffer, infile.gcount(), 0);
 	}
 
-	std::cout <<file_name<<" sent successfully" << std::endl;
 	infile.close();
 
 	/*// Receive the response from the server
@@ -160,6 +154,7 @@ bool GG::upload_file(std::string file_name) {
 	//clean up
 	close(sock);
 
+	std::cout << std::endl;
 	return true;
 }
 
@@ -200,15 +195,15 @@ int GG::download_file(std::string filetoken) {
 		close(clientSocket);
 		return -1;
 	}
-	std::cout << "Sending Info...\n";
+	std::cout << "Requesting stream...\n";
 
 	send(clientSocket, filetoken.c_str(), filetoken.size(), 0);
 
-	std::cout << "Receiving Info...\n";
+	std::cout << "Receiving frames...\n";
 
 	GG::receive_file(clientSocket, filetoken);
 
-	std::cout << "Info Received...\n";
+	std::cout << "Done.\n";
 
 	close(clientSocket);
 

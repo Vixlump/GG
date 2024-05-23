@@ -1,25 +1,27 @@
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <utility>
-#include <cstdlib>
 
-// lovely C libraries
 #include <dirent.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <SDL2/SDL.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "gg.hpp"
 
-std::string GG::Client::_unix_timestamp()
-{
+std::string GG::Client::_unix_timestamp() {
 	int unix_epoch = time(NULL);
 	return std::to_string(unix_epoch);
 }
 
 GG::Client::Client() {
-	char *home = getenv("HOME");
+	const char *home = getenv("HOME");
 	this->_home = home == NULL ? "." : home;
 	this->_load_session(this->_home + "/.ggsession");
 }
@@ -97,8 +99,11 @@ void GG::Client::_clear_session(std::string file_path) {
 }
 
 int GG::Client::request(std::string user) {
+	// make sure no past user data is loaded
+	this->logout();
+
 	this->_user = user;
-	this->_api_key = "this_is_a_fake_api_key";
+	this->_api_key = "unused";
 
 	this->_save_session(this->_home + "/.gg" + user);
 
@@ -144,149 +149,106 @@ std::string GG::Client::status(void) {
 		return ret;
 	}
 
-	ret += "Logged in as \"";
-	ret += this->_user;
-	ret += "\".";
+	ret = "Logged in as \"" + this->_user + "\".";
 
 	if (this->_itop.size() == 0) {
 		return ret; // early return
 	}
 
-	ret += "\nCan stream ";
+	ret += "\nHistory (Unordered):";
 
 	// iterate over the identifier-to-password map
-	auto it = this->_itop.begin();
-
-	if (it != this->_itop.end()) {
-		ret += it->first;
-		it++;
-
-		if (it == this->_itop.end()) {
-			ret += ".";
-			return ret;
-		}
+	for (auto it = this->_itop.begin(); it != this->_itop.end(); ++it) {
+		ret += "\n* " + it->first;
 	}
-
-	// there is more identifiers in map
-	while (true) {
-		std::string identifier = it->first;
-		it++;
-
-		if (it != this->_itop.end()) {
-			ret += ", ";
-			ret += identifier;
-		} else {
-			ret += ", and ";
-			ret += identifier;
-			ret += ".";
-			break; // close while loop
-		}
-	}
-
-//	this->_menu();
 
 	return ret;
 }
 
 int GG::Client::upload(std::string file_path) {
-	std::string dir_general_path = "/tmp/gg/";
 	struct stat st;
 
-	if (stat(dir_general_path.c_str(), &st) != 0) {
-		// directory doesn't exist
-		mkdir(dir_general_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+	// check if /tmp/gg doesn't exist
+	if (stat("/tmp/gg", &st) != 0) {
+		// make it
+		mkdir("/tmp/gg", S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
 	}
 
-	_dir_path = dir_general_path;
-	std::string unix_timestamp = this->_unix_timestamp();
-	_dir_path += unix_timestamp;
-	mkdir(_dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+	this->_bmp_dir = "/tmp/gg/" + this->_unix_timestamp();
+	// make the directory for the bmps
+	mkdir(this->_bmp_dir.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
 
-	std::string command = "ffmpeg -hide_banner -loglevel error -i ";
-	command += file_path;
-	command += " -vf \"scale=400:200,fps=4\" ";
-	command += _dir_path;
-	command += "/%d.bmp";
-
+	std::string command = "ffmpeg -hide_banner -loglevel error -i " + file_path + " -vf \"scale=200:100,fps=8\" " + _bmp_dir + "/%d.bmp";
 	int ret = system(command.c_str());
+
+	// check for errors
 	if (ret != 0) {
-		std::cout << "Error while running ffmpeg." << std::endl;
+		// exit early
 		return ret;
 	}
 
 	// run sys command tar-balling all bmps in /tmp/gg/<unix timestamp>/*.bmp
-	command.clear();
-	command = "tar -cf ";
-	command += "/tmp/gg/";
-	command += unix_timestamp + ".tar";
-	command += " /tmp/gg/";
-	command += unix_timestamp;
-	command += "/*.bmp";
-
-	std::string tarball_path = "/tmp/gg/" + unix_timestamp + ".tar";
-
+	std::string tarball_path = "/tmp/gg/" + this->_unix_timestamp() + ".tar";
+	command = "tar -cf " + tarball_path + " " + this->_bmp_dir + "/*.bmp";
 	ret = system(command.c_str());
-	if (ret != 0) 
-	{
-		std::cerr << "Error tarballing the .bmp files" << std::endl;
+
+	if (ret != 0)  {
 		return ret;
 	}
 
 	// open connection with server (using api key) and transfer the tarball to the server
-	// call it a day
-	if (!GG::upload_file(tarball_path))
-	{
+	if (!GG::upload_file(tarball_path)) {
 		std::cerr << "Error uploading .tar file to the server" << std::endl;
 		return -1;
 	}
 
-	std::string tmp = GG::network_custom("get_v");
+	std::string token = GG::network_custom("get_v");
+	this->_itop.insert(std::make_pair(token, "unused"));
 
-	this->_itop.insert(std::make_pair(tmp, "1234 (highly secure, don't hack us :/)"));
+	std::cout << "Uploaded! Here's your stream token: " << token << '\n';
 
-	std::cout << "File Token: " << tmp << '\n';
-
-	return 0;
+	return 0; // success
 }
 
 int GG::Client::stream(std::string token) {
+	// check if this token is in the history yet
+	if (this->_itop.count(token) == 0) {
+		this->_itop.insert(std::make_pair(token, "unused"));
+	}
+
 	struct stat st;
 
-	if (this->_itop.count(token) == 0) {
-		this->_itop.insert(std::make_pair(token, "1234 (highly secure, don't hack us :/)"));
-	}
-
-	if (stat("/tmp/gg/", &st) != 0) {
+	// check if the tmp dir exists
+	if (stat("/tmp/gg", &st) != 0) {
 		// directory doesn't exist
-		mkdir("/tmp/gg/", S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+		mkdir("/tmp/gg", S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
 	}
 
-	std::string unix_timestamp = this->_unix_timestamp();
+	std::cout << token << std::endl;
+	this->_bmp_dir = "/tmp/gg/" + token;
 
-	if (GG::download_file(token) != 0)
-	{
-		std::cerr << "Error downloading file from the server" << std::endl;
-		return -1;
+	if (stat(this->_bmp_dir.c_str(), &st) != 0) {
+		// haven't streamed this yet; download the frames
+		if (GG::download_file(token) != 0) {
+			std::cerr << "Error downloading file from the server" << std::endl;
+			return -1;
+		}
+
+		// create the necessary directory
+		mkdir(this->_bmp_dir.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
+
+		// extract the files from the tarball into /tmp/gg/{token}
+		std::string command = "tar -xf /tmp/gg/" + token + ".tar --strip-components 3 -C " + this->_bmp_dir;
+		int ret = system(command.c_str());
+
+		// check that unzipping was successful
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
-	this->_dir_path = "/tmp/gg/" + unix_timestamp;
-	mkdir(this->_dir_path.c_str(), S_IFDIR|S_IRWXU|S_IRWXG|S_IRWXO);
-
-	// extract the files from the tarball into /tmp/gg/{unix_timestamp}
-	// tar -xvzf community_images.tar format
-	std::string command = "tar -xf /tmp/gg/";
-	command += token;
-	command += ".tar --strip-components 3 -C " + this->_dir_path;
-
-	int ret = system(command.c_str());
-	if (ret != 0) 
-	{
-		std::cerr << "Error extracting the tarball" << std::endl;
-		return ret;
-	}
-	
 	// open the directory of bmps
-	DIR *dir = opendir(this->_dir_path.c_str());
+	DIR *dir = opendir(this->_bmp_dir.c_str());
 	struct dirent *entry;
 	int num_bmps = 0;
 
@@ -300,28 +262,28 @@ int GG::Client::stream(std::string token) {
 
 	closedir(dir);
 	dir = NULL;
+
+	int frame = 1;
 	
-	// initialize frame counts
-	this->_frame = 1;
-	this->_total_frames = num_bmps;
+	// display frames (wait for SIGKILL)
+	while (true) {
+		std::string fname = this->_bmp_dir + "/" + std::to_string(frame) + ".bmp";
+		struct winsize w;
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-	// this displays the menu
-	//return this->_menu(ScreenState::VideoScreen);
-	this->_play_video(4); // 4fps
+		std::cout << GG::bmp_to_ascii(fname.c_str(), w.ws_col - 1, w.ws_row - 1);
+		fflush(stdout); // flush the screen
 
-	std::cout << "cleaning up" << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(125)); // 8fps
 
-	return 0;
-}
+		frame++;
 
-std::string GG::Client::_next_frame(int term_width, int term_height) {
-	if (this->_frame >= this->_total_frames) {
-		this->_frame = 1;
+		// loop the video
+		if (frame > num_bmps) {
+			frame = 1;
+		}
+
 	}
 
-	std::string fname = this->_dir_path + "/" + std::to_string(this->_frame) + ".bmp";
-	std::string buffer = GG::bmp_to_ascii(fname.c_str(), term_width, term_height);
-	this->_frame++;
-
-	return buffer;
+	return 0;
 }
