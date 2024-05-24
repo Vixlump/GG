@@ -24,6 +24,10 @@ GG::Client::Client() {
 	const char *home = getenv("HOME");
 	this->_home = home == NULL ? "." : home;
 	this->_load_session(this->_home + "/.ggsession");
+
+	// for tput see https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/tput.html
+	long num_colours = std::strtol(exec("tput colors").c_str(), nullptr, 10);
+	this->_terminal_supports_colour = (num_colours >= 8);
 }
 
 GG::Client::~Client() {
@@ -264,17 +268,36 @@ int GG::Client::stream(std::string token) {
 	dir = NULL;
 
 	int frame = 1;
-	
+	int last_num_rows = -1;
+
 	// display frames (wait for SIGKILL)
 	while (true) {
+		auto frame_start = std::chrono::high_resolution_clock::now();
+
 		std::string fname = this->_bmp_dir + "/" + std::to_string(frame) + ".bmp";
 		struct winsize w;
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-		std::cout << GG::bmp_to_ascii(fname.c_str(), w.ws_col - 1, w.ws_row - 1);
+		int curr_num_rows = w.ws_row - 1;
+		int curr_num_cols = w.ws_col - 1;
+		if (last_num_rows > 0) {
+			// move cursor to top of the screen
+			// see: https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+			std::cout << repeat(std::string("\033M"), last_num_rows);
+		}
+
+		std::cout << GG::bmp_to_ascii(fname.c_str(), curr_num_cols, curr_num_rows);
+		last_num_rows = curr_num_rows;
 		fflush(stdout); // flush the screen
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(125)); // 8fps
+		auto frame_end = std::chrono::high_resolution_clock::now();
+
+		const int FPS = 8;
+		auto elapsed_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(frame_end - frame_start);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS) - elapsed_duration);
+
+		// elapses worst case 836405 ns on my machine at full screen
+		//debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
 
 		frame++;
 
@@ -282,7 +305,6 @@ int GG::Client::stream(std::string token) {
 		if (frame > num_bmps) {
 			frame = 1;
 		}
-
 	}
 
 	return 0;

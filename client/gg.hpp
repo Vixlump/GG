@@ -4,6 +4,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "utils.hpp"
+#include "types.hpp"
+
 #include "ftxui/component/screen_interactive.hpp"
 
 namespace GG {
@@ -44,6 +47,9 @@ namespace GG {
 		std::string _bmp_dir;
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
+
+		// for rendering coloured ascii :)
+		bool _terminal_supports_colour;
 
 		// load session information from a file
 		void _load_session(std::string file_path);
