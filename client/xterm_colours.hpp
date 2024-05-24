@@ -1,4 +1,7 @@
-const size_t NUM_XTERM_COLOURS = 256 - 3; // black, white, and middle grey are duplicates, which we ignore for performance
+const size_t NUM_XTERM_COLOURS = 256; 
+
+// black, white, and middle grey are duplicates, but we keep them so our indices are 
+// consistent with the default 256 colours
 
 // from https://github.com/sindresorhus/xterm-colors/blob/main/xterm-colors.json
 // seems consistent with https://www.ditig.com/publications/256-colors-cheat-sheet
@@ -11,7 +14,7 @@ const int xterm_colours[NUM_XTERM_COLOURS] = {
     0x800080,
     0x008080,
     0xc0c0c0,
-    //0x808080, // duplicate
+    0x808080, // duplicate
     0xff0000,
     0x00ff00,
     0xffff00,
@@ -19,7 +22,7 @@ const int xterm_colours[NUM_XTERM_COLOURS] = {
     0xff00ff,
     0x00ffff,
     0xffffff,
-    //0x000000, // duplicate
+    0x000000, // duplicate
     0x00005f,
     0x000087,
     0x0000af,
@@ -234,7 +237,7 @@ const int xterm_colours[NUM_XTERM_COLOURS] = {
     0xffff87,
     0xffffaf,
     0xffffd7,
-    //0xffffff, // duplicate
+    0xffffff, // duplicate
     0x080808,
     0x121212,
     0x1c1c1c,

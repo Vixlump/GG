@@ -40,4 +40,9 @@ inline std::string repeat(const std::string& input, unsigned num) {
     return repeated_string;
 }
 
+// TODO: upgrade to c++20, b/c std::lerp has better numerical properties
+inline float naive_lerp(float a, float b, float t) {
+    return a + t * (b - a);
+}
+
 #endif // UTILS_H

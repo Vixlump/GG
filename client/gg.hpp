@@ -6,6 +6,7 @@
 
 #include "utils.hpp"
 #include "types.hpp"
+#include "xterm_colours.hpp"
 
 #include "ftxui/component/screen_interactive.hpp"
 
@@ -50,6 +51,7 @@ namespace GG {
 
 		// for rendering coloured ascii :)
 		bool _terminal_supports_colour;
+		void _populate_color_lookup_table(CharFormat *color_lookup_table);
 
 		// load session information from a file
 		void _load_session(std::string file_path);
@@ -65,7 +67,7 @@ namespace GG {
 	};
 
 	// load a given bitmap image, then return a printable version of the image
-	std::string bmp_to_ascii(const char *file_path, int cols, int lines);
+	std::string bmp_to_ascii(const char *file_path, int cols, int lines, bool enable_colour, CharFormat* colour_lookup_table);
 
 	// server helper functions
 	bool upload_file(std::string file_name);

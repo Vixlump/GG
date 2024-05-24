@@ -14,7 +14,7 @@
 
 #include "gg.hpp"
 
-std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
+std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_colour, CharFormat* colour_lookup_table) {
 	// I'm sorry, but I'm just quite familiar with SDL
 	SDL_Surface *surf = SDL_LoadBMP(file_path);
 	std::string buffer = "";
@@ -24,18 +24,16 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 		return buffer;
 	}
 
-	int og_w = w, og_h = h;
+	int og_w = w;
+	int og_h = h;
 
-	if (w > surf->w) {
+	if (w > surf->w)
 		w = surf->w;
-	}
-
-	if (h > surf->h) {
+	if (h > surf->h)
 		h = surf->h;
-	}
 
 	int Bpp = surf->format->BytesPerPixel;
-	const char *chars = "  .-:=+*%#@@";
+	const char *chars = " .-:=+*oO#%@";
 	float ystep = (float)surf->h / (float)h;
 	float xstep = (float)surf->w / (float)w;
 	int line_length, height = 0;
@@ -57,20 +55,47 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 		}
 
 		for (float xf = 0; (int)xf < surf->w; xf += xstep) {
+			// TODO: do bilinear or bicubic
 			// int approx. (nearest neighbour)
 			int y = (int)yf;
 			int x = (int)xf;
 
 			uint8_t *target_pixel = (uint8_t *)surf->pixels + y*surf->pitch + x*Bpp;
 			uint32_t pixel = *(uint32_t *)target_pixel;
-			// the following three lines assume the pixel is RGB, GBR, ...
-			int cmp1 = pixel & 0xff;
-			int cmp2 = (pixel >> 8) & 0xff;
-			int cmp3 = (pixel >> 16) & 0xff;
-			pixel = cmp1 + cmp2 + cmp3; // sum color components (<768)
-			pixel /= 64; // (<96)
+			// we don't care about the order of the RGB values in the 32 bits, sdl knows
+			int r = (pixel & surf->format->Rmask) >> surf->format->Rshift;
+			int g = (pixel & surf->format->Gmask) >> surf->format->Gshift;
+			int b = (pixel & surf->format->Bmask) >> surf->format->Bshift;
+			
+			if (enable_colour) {
+				// take 4 MSB of rgb 
+				int r_small = (r & 0xf0) >> 4;
+				int g_small = (g & 0xf0) >> 4;
+				int b_small = (b & 0xf0) >> 4;
 
-			buffer += chars[pixel];
+				CharFormat resultColour = colour_lookup_table[r_small * 16 * 16 + g_small * 16 + b_small];
+
+				//int bg_r = (xterm_colours[resultColour.bg_color_index] & 0xff0000) >> 16;
+				//int bg_g = (xterm_colours[resultColour.bg_color_index] & 0x00ff00) >> 8;
+				//int bg_b = xterm_colours[resultColour.bg_color_index] & 0x0000ff;
+				//buffer.bg_colour_buffer.push_back(ftxui::Color(bg_r, bg_g, bg_b));
+
+				buffer += "\033[48;5;" + std::to_string(resultColour.bg_color_index) + "m";
+
+				//int fg_r = (xterm_colours[resultColour.fg_color_index] & 0xff0000) >> 16;
+				//int fg_g = (xterm_colours[resultColour.fg_color_index] & 0x00ff00) >> 8;
+				//int fg_b = xterm_colours[resultColour.fg_color_index] & 0x0000ff;
+				//buffer.fg_colour_buffer.push_back(ftxui::Color(fg_r, fg_g, fg_b));
+
+				buffer += "\033[38;5;" + std::to_string(resultColour.fg_color_index) + "m";
+
+				buffer += chars[resultColour.char_index];
+			} else {
+				pixel = r + g + b; // sum color components (<768)
+				pixel /= 64; // (<96)
+				buffer += chars[pixel];
+			}
+
 			line_length++;
 
 			// just to make sure it doesn't go too far
@@ -86,6 +111,11 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h) {
 		if (height == h) {
 			break;
 		}
+	}
+
+	if (enable_colour) {
+		// reset all fancy modes & go back to default terminal text
+		buffer += "\033[0m";
 	}
 
 	for (int i = 0; i < paddingy - 1; i++) {

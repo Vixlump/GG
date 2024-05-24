@@ -214,6 +214,65 @@ int GG::Client::upload(std::string file_path) {
 	return 0; // success
 }
 
+
+// right now this is 4 bit colour, not 8 bit colour.
+void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table) {
+	// for char densities see https://stackoverflow.com/questions/30097953/ascii-art-sorting-an-array-of-ascii-characters-by-brightness-levels-c-c
+	const size_t NUM_CHARS = 12;
+	const float densities[NUM_CHARS] = {
+		0.0, 0.0829, 0.0848, 0.1403, 0.2417, 0.2919, 0.3294, 0.4580, 0.5972, 0.6809, 0.7834, 0.9999
+	};
+
+	// this number converts between a [0,1] range density, and a value that represents the fraction of the viewport that's coloured, by division.
+	// It's an approximate that I got by measuring the number of unaffected pixels in a character rendered in Consolas. 
+	const float CONVERSION_FACTOR = 1.742514;
+
+	std::unordered_map<uint32_t, CharFormat> virtual_color_table;
+	for (size_t fgi = 0; fgi < NUM_XTERM_COLOURS; fgi++) {
+		int fg_r = (xterm_colours[fgi] & 0xff0000) >> 16;
+		int fg_g = (xterm_colours[fgi] & 0x00ff00) >> 8;
+		int fg_b = xterm_colours[fgi] & 0x0000ff;
+
+		for (size_t bgi = 0; bgi < NUM_XTERM_COLOURS; bgi++) {
+			int bg_r = (xterm_colours[bgi] & 0xff0000) >> 16;
+			int bg_g = (xterm_colours[bgi] & 0x00ff00) >> 8;
+			int bg_b = xterm_colours[bgi] & 0x0000ff;
+
+			for (size_t chi = 0; chi < NUM_CHARS; chi++) {
+				int iresult_r = std::lround(naive_lerp((float)bg_r, (float)fg_r, densities[chi] / CONVERSION_FACTOR));
+				int iresult_g = std::lround(naive_lerp((float)bg_g, (float)fg_g, densities[chi] / CONVERSION_FACTOR));
+				int iresult_b = std::lround(naive_lerp((float)bg_b, (float)fg_b, densities[chi] / CONVERSION_FACTOR));
+
+                // 0xf0 converts from 8 bit colours to 4 bit colours (ignore the less significant 4 bits)
+				uint8_t result_r = 0xf0 & (iresult_r > 255 ? 255 : (uint8_t) iresult_r);
+				uint8_t result_g = 0xf0 & (iresult_g > 255 ? 255 : (uint8_t) iresult_g);
+				uint8_t result_b = 0xf0 & (iresult_b > 255 ? 255 : (uint8_t) iresult_b);
+
+				uint32_t combined_rgb = (result_r << 16) | (result_g << 8) | result_b;
+				virtual_color_table[combined_rgb] = CharFormat {
+					(uint8_t) fgi,
+					(uint8_t) bgi,
+					(uint8_t) chi
+				};
+			}
+		}
+	}
+
+	printf("virtual_color_table size: %lu\n", virtual_color_table.size());
+
+	// TODO: find closest match in all of virtual_color_table's keys
+    // We'll have to sort the virtual colour table by intensity, then use upper & lower bounds to search a range. 
+    // Ex: if our closest match has a distance of 16, then all intensity distances larger than 16 can be ignored.
+
+    for (auto& it: virtual_color_table) {
+        // each of r,g,b are 4 bit integers (at least, pretend they are)
+		int r = (it.first & 0xf00000) >> (16 + 4);
+		int g = (it.first & 0x00f000) >> (8 + 4);
+		int b = (it.first & 0x0000f0) >> (0 + 4);
+        color_lookup_table[r * 16 * 16 + g * 16 + b] = it.second;
+    }
+}
+
 int GG::Client::stream(std::string token) {
 	// check if this token is in the history yet
 	if (this->_itop.count(token) == 0) {
@@ -267,6 +326,10 @@ int GG::Client::stream(std::string token) {
 	closedir(dir);
 	dir = NULL;
 
+	// create colour lookup table for generating ascii colour codes 
+	CharFormat* colour_lookup_table = new CharFormat[16 * 16 * 16];
+    this->_populate_color_lookup_table(colour_lookup_table);
+
 	int frame = 1;
 	int last_num_rows = -1;
 
@@ -286,7 +349,7 @@ int GG::Client::stream(std::string token) {
 			std::cout << repeat(std::string("\033M"), last_num_rows);
 		}
 
-		std::cout << GG::bmp_to_ascii(fname.c_str(), curr_num_cols, curr_num_rows);
+		std::cout << GG::bmp_to_ascii(fname.c_str(), curr_num_cols, curr_num_rows, this->_terminal_supports_colour, colour_lookup_table);
 		last_num_rows = curr_num_rows;
 		fflush(stdout); // flush the screen
 
@@ -296,7 +359,7 @@ int GG::Client::stream(std::string token) {
 		auto elapsed_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(frame_end - frame_start);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS) - elapsed_duration);
 
-		// elapses worst case 836405 ns on my machine at full screen
+		// elapses worst case 836405 ns on my machine at full-full screen
 		//debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
 
 		frame++;
