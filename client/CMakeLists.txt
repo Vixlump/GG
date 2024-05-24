@@ -29,3 +29,5 @@ target_link_libraries(
   PRIVATE ftxui::dom
   PRIVATE ftxui::component
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

@@ -48,7 +48,7 @@ void GG::Client::_load_session(std::string file_path) {
 	// read every line from the file as lines in the form "key:value"
 	while (session_file.good()) {
 		std::getline(session_file, line);
-		int colon_index = line.find(":");
+		size_t colon_index = line.find(":");
 
 		if (colon_index == std::string::npos) {
 			continue; // bad line
