@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <array>
 
 inline void debug_log(std::string contents) {
 	std::ofstream file;
@@ -19,7 +20,9 @@ inline void debug_log(std::string contents) {
 inline std::string exec(const char* cmd) {
     std::array<char, 128> buffer;
     std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    auto pclose_wrapper = [](FILE* file) { return pclose(file); };
+    std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(popen(cmd, "r"), pclose_wrapper);
+    //std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
 
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
