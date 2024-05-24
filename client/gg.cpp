@@ -19,10 +19,6 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_co
 	SDL_Surface *surf = SDL_LoadBMP(file_path);
 	std::string buffer = "";
 
-	if (enable_colour) {
-		buffer.reserve(w * h * (9 + 9 + 2));
-	}
-
 	if (surf == NULL) {
 		std::cout << "Couldn't load pixel data from file " << file_path << ".\n";
 		return buffer;

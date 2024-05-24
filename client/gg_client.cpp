@@ -215,7 +215,7 @@ int GG::Client::upload(std::string file_path) {
 }
 
 // right now this is 4 bit colour, not 8 bit colour.
-void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind) {
+void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind, size_t num_colours, bool disable_bg_colours) {
 	// for char densities see https://stackoverflow.com/questions/30097953/ascii-art-sorting-an-array-of-ascii-characters-by-brightness-levels-c-c
 	const size_t NUM_CHARS = 12;
 	const float densities[NUM_CHARS] = {
@@ -227,12 +227,13 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 	const float CONVERSION_FACTOR = 1.742514;
 
 	std::unordered_map<uint32_t, CharFormat> virtual_color_table;
-	for (size_t fgi = 0; fgi < NUM_XTERM_COLOURS; fgi++) {
+	for (size_t fgi = 0; fgi < num_colours; fgi++) {
 		int fg_r = (xterm_colours[fgi] & 0xff0000) >> 16;
 		int fg_g = (xterm_colours[fgi] & 0x00ff00) >> 8;
 		int fg_b = xterm_colours[fgi] & 0x0000ff;
 
-		for (size_t bgi = 0; bgi < NUM_XTERM_COLOURS; bgi++) {
+		size_t num_bg_iters = disable_bg_colours ? 1 : num_colours;
+		for (size_t bgi = 0; bgi < num_bg_iters; bgi++) {
 			int bg_r = (xterm_colours[bgi] & 0xff0000) >> 16;
 			int bg_g = (xterm_colours[bgi] & 0x00ff00) >> 8;
 			int bg_b = xterm_colours[bgi] & 0x0000ff;
@@ -289,12 +290,11 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 				} else {
 					virtual_color_table[combined_rgb] = new_format;
 				}
-				
 			}
 		}
 	}
 
-	printf("virtual_color_table size: %lu\n", virtual_color_table.size());
+	//printf("virtual_color_table size: %lu\n", virtual_color_table.size());
 
 	// TODO: find closest match in all of virtual_color_table's keys
     // We'll have to sort the virtual colour table by intensity, then use upper & lower bounds to search a range. 
@@ -307,6 +307,29 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 		int b = (it.first & 0x0000f0) >> (0 + 4);
         color_lookup_table[r * 16 * 16 + g * 16 + b] = it.second;
     }
+
+	// fill in holes with closest match
+	if (virtual_color_table.size() < 4096) {
+		for (int r = 0; r < 16; r++) {
+			for (int g = 0; g < 16; g++) {
+				for (int b = 0; b < 16; b++) {
+					int combined_rgb = (r << (16+4)) | (g << (8+4)) | (b << 4);
+					if (virtual_color_table.find(combined_rgb) == virtual_color_table.end()) {
+						CharFormat closest_match;
+						int closest_mse = 256 * 256 * 3;
+						for (auto& it: virtual_color_table) {
+							int current_mse = get_fg_bg_mse(combined_rgb, it.first);
+							if (current_mse < closest_mse) {
+								closest_mse = current_mse;
+								closest_match = it.second;
+							}
+						}
+				        color_lookup_table[r * 16 * 16 + g * 16 + b] = closest_match;
+					}
+				}
+			}
+		}
+	}
 }
 
 int GG::Client::stream(std::string token) {
@@ -364,7 +387,7 @@ int GG::Client::stream(std::string token) {
 
 	// create colour lookup table for generating ascii colour codes 
 	CharFormat* colour_lookup_table = new CharFormat[16 * 16 * 16];
-    this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE);
+    this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE, NUM_XTERM_COLOURS, false);
 
 	int frame = 1;
 	int last_num_rows = -1;
@@ -396,7 +419,7 @@ int GG::Client::stream(std::string token) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS) - elapsed_duration);
 
 		// elapses worst case 836405 ns on my machine at full-full screen
-		//debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
+		debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
 
 		frame++;
 
