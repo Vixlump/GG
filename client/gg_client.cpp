@@ -396,7 +396,7 @@ int GG::Client::stream(std::string token) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS) - elapsed_duration);
 
 		// elapses worst case 836405 ns on my machine at full-full screen
-		debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
+		//debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
 
 		frame++;
 
