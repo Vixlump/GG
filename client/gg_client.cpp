@@ -214,9 +214,8 @@ int GG::Client::upload(std::string file_path) {
 	return 0; // success
 }
 
-
 // right now this is 4 bit colour, not 8 bit colour.
-void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table) {
+void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind) {
 	// for char densities see https://stackoverflow.com/questions/30097953/ascii-art-sorting-an-array-of-ascii-characters-by-brightness-levels-c-c
 	const size_t NUM_CHARS = 12;
 	const float densities[NUM_CHARS] = {
@@ -249,11 +248,48 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table) {
 				uint8_t result_b = 0xf0 & (iresult_b > 255 ? 255 : (uint8_t) iresult_b);
 
 				uint32_t combined_rgb = (result_r << 16) | (result_g << 8) | result_b;
-				virtual_color_table[combined_rgb] = CharFormat {
+
+				auto new_format = CharFormat {
 					(uint8_t) fgi,
 					(uint8_t) bgi,
 					(uint8_t) chi
 				};
+				if (virtual_color_table.find(combined_rgb) != virtual_color_table.end()) {
+					auto existing_format = virtual_color_table[combined_rgb];
+					if (kind == ColorSchemeKind::Contrast) {
+						int new_contrast = get_fg_bg_contrast(
+							xterm_colours[new_format.fg_color_index], 
+							xterm_colours[new_format.bg_color_index]
+						);
+						int existing_contrast = get_fg_bg_contrast(
+							xterm_colours[existing_format.fg_color_index], 
+							xterm_colours[existing_format.bg_color_index]
+						);
+						if (new_contrast < existing_contrast) {
+							virtual_color_table[combined_rgb] = new_format;
+						}
+
+					} else if (kind == ColorSchemeKind::MSE) {
+						int new_mse = get_fg_bg_mse(
+							xterm_colours[new_format.fg_color_index], 
+							xterm_colours[new_format.bg_color_index]
+						);
+						int existing_mse = get_fg_bg_mse(
+							xterm_colours[existing_format.fg_color_index], 
+							xterm_colours[existing_format.bg_color_index]
+						);
+						if (new_mse < existing_mse) {
+							virtual_color_table[combined_rgb] = new_format;
+						}
+
+					} else {
+						virtual_color_table[combined_rgb] = new_format;
+					}
+
+				} else {
+					virtual_color_table[combined_rgb] = new_format;
+				}
+				
 			}
 		}
 	}
@@ -328,7 +364,7 @@ int GG::Client::stream(std::string token) {
 
 	// create colour lookup table for generating ascii colour codes 
 	CharFormat* colour_lookup_table = new CharFormat[16 * 16 * 16];
-    this->_populate_color_lookup_table(colour_lookup_table);
+    this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE);
 
 	int frame = 1;
 	int last_num_rows = -1;
@@ -360,7 +396,7 @@ int GG::Client::stream(std::string token) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS) - elapsed_duration);
 
 		// elapses worst case 836405 ns on my machine at full-full screen
-		//debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
+		debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
 
 		frame++;
 

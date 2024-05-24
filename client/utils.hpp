@@ -1,11 +1,12 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <cstdlib>
+#include <cmath>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <utility>
-#include <cstdlib>
-#include <memory>
 
 inline void debug_log(std::string contents) {
 	std::ofstream file;
@@ -44,5 +45,33 @@ inline std::string repeat(const std::string& input, unsigned num) {
 inline float naive_lerp(float a, float b, float t) {
     return a + t * (b - a);
 }
+
+inline int get_fg_bg_contrast(uint32_t fg_colour, uint32_t bg_colour) {
+    int fg_r = (fg_colour & 0xff0000) >> 16;
+	int fg_g = (fg_colour & 0x00ff00) >> 8;
+	int fg_b = fg_colour & 0x0000ff;
+    
+	int bg_r = (bg_colour & 0xff0000) >> 16;
+	int bg_g = (bg_colour & 0x00ff00) >> 8;
+	int bg_b = bg_colour & 0x0000ff;
+
+    return (int) std::abs(
+        (fg_r * 0.2126 + fg_g * 0.7152 + fg_b * 0.0722) - 
+        (bg_r * 0.2126 + bg_g * 0.7152 + bg_b * 0.0722)
+    );
+}
+
+inline int get_fg_bg_mse(uint32_t fg_colour, uint32_t bg_colour) {
+    int fg_r = (fg_colour & 0xff0000) >> 16;
+	int fg_g = (fg_colour & 0x00ff00) >> 8;
+	int fg_b = fg_colour & 0x0000ff;
+    
+	int bg_r = (bg_colour & 0xff0000) >> 16;
+	int bg_g = (bg_colour & 0x00ff00) >> 8;
+	int bg_b = bg_colour & 0x0000ff;
+
+    return (fg_r - bg_r) * (fg_r - bg_r) + (fg_g - bg_g) * (fg_g - bg_g) + (fg_b - bg_b) * (fg_b - bg_b);
+}
+
 
 #endif // UTILS_H

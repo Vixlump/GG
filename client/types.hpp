@@ -13,6 +13,11 @@ struct CharFormat {
 	uint8_t char_index;
 };
 
+// The parameters to minimze for computing the colour lookup table
+enum ColorSchemeKind {
+    Arbitrary, MSE, Contrast
+};
+
 // contains all the buffers needed to render a screen.
 //struct RenderableScreenBuffer {
 //	std::string char_buffer;

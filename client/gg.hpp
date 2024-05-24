@@ -51,7 +51,7 @@ namespace GG {
 
 		// for rendering coloured ascii :)
 		bool _terminal_supports_colour;
-		void _populate_color_lookup_table(CharFormat *color_lookup_table);
+		void _populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind);
 
 		// load session information from a file
 		void _load_session(std::string file_path);
