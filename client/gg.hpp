@@ -53,6 +53,7 @@ namespace GG {
 		bool _terminal_supports_colour;
 		void _populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind, size_t num_colours, bool disable_bg_colours);
 
+
 		// load session information from a file
 		void _load_session(std::string file_path);
 		// save session information to a file

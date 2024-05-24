@@ -243,7 +243,7 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 				int iresult_g = std::lround(naive_lerp((float)bg_g, (float)fg_g, densities[chi] / CONVERSION_FACTOR));
 				int iresult_b = std::lround(naive_lerp((float)bg_b, (float)fg_b, densities[chi] / CONVERSION_FACTOR));
 
-                // 0xf0 converts from 8 bit colours to 4 bit colours (ignore the less significant 4 bits)
+        // 0xf0 converts from 8 bit colours to 4 bit colours (ignore the less significant 4 bits)
 				uint8_t result_r = 0xf0 & (iresult_r > 255 ? 255 : (uint8_t) iresult_r);
 				uint8_t result_g = 0xf0 & (iresult_g > 255 ? 255 : (uint8_t) iresult_g);
 				uint8_t result_b = 0xf0 & (iresult_b > 255 ? 255 : (uint8_t) iresult_b);
@@ -296,15 +296,15 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 
 	//printf("virtual_color_table size: %lu\n", virtual_color_table.size());
 
-	// TODO: find closest match in all of virtual_color_table's keys
+	  // TODO: find closest match in all of virtual_color_table's keys
     // We'll have to sort the virtual colour table by intensity, then use upper & lower bounds to search a range. 
     // Ex: if our closest match has a distance of 16, then all intensity distances larger than 16 can be ignored.
 
     for (auto& it: virtual_color_table) {
         // each of r,g,b are 4 bit integers (at least, pretend they are)
-		int r = (it.first & 0xf00000) >> (16 + 4);
-		int g = (it.first & 0x00f000) >> (8 + 4);
-		int b = (it.first & 0x0000f0) >> (0 + 4);
+		    int r = (it.first & 0xf00000) >> (16 + 4);
+		    int g = (it.first & 0x00f000) >> (8 + 4);
+		    int b = (it.first & 0x0000f0) >> (0 + 4);
         color_lookup_table[r * 16 * 16 + g * 16 + b] = it.second;
     }
 
@@ -387,7 +387,7 @@ int GG::Client::stream(std::string token) {
 
 	// create colour lookup table for generating ascii colour codes 
 	CharFormat* colour_lookup_table = new CharFormat[16 * 16 * 16];
-    this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE, NUM_XTERM_COLOURS, false);
+  this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE, NUM_XTERM_COLOURS, false);
 
 	int frame = 1;
 	int last_num_rows = -1;
@@ -419,7 +419,7 @@ int GG::Client::stream(std::string token) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS) - elapsed_duration);
 
 		// elapses worst case 836405 ns on my machine at full-full screen
-		debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
+		//debug_log("elapsed_duration: " + std::to_string(elapsed_duration.count()) + " ns\n");
 
 		frame++;
 
