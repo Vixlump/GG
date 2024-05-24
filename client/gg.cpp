@@ -75,20 +75,8 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_co
 
 				CharFormat resultColour = colour_lookup_table[r_small * 16 * 16 + g_small * 16 + b_small];
 
-				//int bg_r = (xterm_colours[resultColour.bg_color_index] & 0xff0000) >> 16;
-				//int bg_g = (xterm_colours[resultColour.bg_color_index] & 0x00ff00) >> 8;
-				//int bg_b = xterm_colours[resultColour.bg_color_index] & 0x0000ff;
-				//buffer.bg_colour_buffer.push_back(ftxui::Color(bg_r, bg_g, bg_b));
-
 				buffer += "\033[48;5;" + std::to_string(resultColour.bg_color_index) + "m";
-
-				//int fg_r = (xterm_colours[resultColour.fg_color_index] & 0xff0000) >> 16;
-				//int fg_g = (xterm_colours[resultColour.fg_color_index] & 0x00ff00) >> 8;
-				//int fg_b = xterm_colours[resultColour.fg_color_index] & 0x0000ff;
-				//buffer.fg_colour_buffer.push_back(ftxui::Color(fg_r, fg_g, fg_b));
-
 				buffer += "\033[38;5;" + std::to_string(resultColour.fg_color_index) + "m";
-
 				buffer += chars[resultColour.char_index];
 			} else {
 				pixel = r + g + b; // sum color components (<768)
