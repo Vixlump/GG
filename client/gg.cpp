@@ -14,12 +14,12 @@
 
 #include "gg.hpp"
 
-std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_colour, CharFormat* colour_lookup_table) {
+std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_color, CharFormat* color_lookup_table) {
 	// I'm sorry, but I'm just quite familiar with SDL
 	SDL_Surface *surf = SDL_LoadBMP(file_path);
 	std::string buffer = "";
 
-	if (enable_colour) {
+	if (enable_color) {
 		buffer.reserve(w * h * (9 + 9 + 2));
 	}
 
@@ -72,17 +72,17 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_co
 			int g = (pixel & surf->format->Gmask) >> surf->format->Gshift;
 			int b = (pixel & surf->format->Bmask) >> surf->format->Bshift;
 			
-			if (enable_colour) {
+			if (enable_color) {
 				// take 4 MSB of rgb 
 				int r_small = (r & 0xf0) >> 4;
 				int g_small = (g & 0xf0) >> 4;
 				int b_small = (b & 0xf0) >> 4;
 
-				CharFormat resultColour = colour_lookup_table[r_small * 16 * 16 + g_small * 16 + b_small];
+				CharFormat result_color = color_lookup_table[r_small * 16 * 16 + g_small * 16 + b_small];
 
-				buffer += "\033[48;5;" + std::to_string(resultColour.bg_color_index) + "m";
-				buffer += "\033[38;5;" + std::to_string(resultColour.fg_color_index) + "m";
-				buffer += chars[resultColour.char_index];
+				buffer += "\033[48;5;" + std::to_string(result_color.bg_color_index) + "m";
+				buffer += "\033[38;5;" + std::to_string(result_color.fg_color_index) + "m";
+				buffer += chars[result_color.char_index];
 			} else {
 				pixel = r + g + b; // sum color components (<768)
 				pixel /= 64; // (<96)
@@ -106,7 +106,7 @@ std::string GG::bmp_to_ascii(const char *file_path, int w, int h, bool enable_co
 		}
 	}
 
-	if (enable_colour) {
+	if (enable_color) {
 		// reset all fancy modes & go back to default terminal text
 		buffer += "\033[0m";
 	}

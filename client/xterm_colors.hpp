@@ -1,11 +1,11 @@
-const size_t NUM_XTERM_COLOURS = 256; 
+const size_t NUM_XTERM_COLORS = 256; 
 
 // black, white, and middle grey are duplicates, but we keep them so our indices are 
-// consistent with the default 256 colours
+// consistent with the default 256 colors
 
 // from https://github.com/sindresorhus/xterm-colors/blob/main/xterm-colors.json
 // seems consistent with https://www.ditig.com/publications/256-colors-cheat-sheet
-const int xterm_colours[NUM_XTERM_COLOURS] = { 
+const int xterm_colors[NUM_XTERM_COLORS] = { 
     0x000000,
     0x800000,
     0x008000,

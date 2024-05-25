@@ -6,7 +6,7 @@
 
 #include "utils.hpp"
 #include "types.hpp"
-#include "xterm_colours.hpp"
+#include "xterm_colors.hpp"
 
 #include "ftxui/component/screen_interactive.hpp"
 
@@ -49,9 +49,10 @@ namespace GG {
 		// maps identifier (string) to password (string)
 		std::unordered_map<std::string, std::string> _itop;
 
-		// for rendering coloured ascii :)
-		bool _terminal_supports_colour;
-		void _populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind);
+		// for rendering colored ascii :)
+		bool _terminal_supports_color;
+		void _populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind, size_t num_colors, bool disable_bg_colors);
+
 
 		// load session information from a file
 		void _load_session(std::string file_path);
@@ -67,7 +68,7 @@ namespace GG {
 	};
 
 	// load a given bitmap image, then return a printable version of the image
-	std::string bmp_to_ascii(const char *file_path, int cols, int lines, bool enable_colour, CharFormat* colour_lookup_table);
+	std::string bmp_to_ascii(const char *file_path, int cols, int lines, bool enable_color, CharFormat* color_lookup_table);
 
 	// server helper functions
 	bool upload_file(std::string file_name);

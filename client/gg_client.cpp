@@ -26,8 +26,8 @@ GG::Client::Client() {
 	this->_load_session(this->_home + "/.ggsession");
 
 	// for tput see https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/tput.html
-	long num_colours = std::strtol(exec("tput colors").c_str(), nullptr, 10);
-	this->_terminal_supports_colour = (num_colours >= 8);
+	long num_colors = std::strtol(exec("tput colors").c_str(), nullptr, 10);
+	this->_terminal_supports_color = (num_colors >= 8);
 }
 
 GG::Client::~Client() {
@@ -214,35 +214,56 @@ int GG::Client::upload(std::string file_path) {
 	return 0; // success
 }
 
-// right now this is 4 bit colour, not 8 bit colour.
-void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind) {
+CharFormat find_closest_color_match(
+    std::unordered_map<uint32_t, CharFormat> &virtual_color_table, 
+    uint32_t reference_rgb
+) {
+    CharFormat closest_match;
+    int closest_mse = 256 * 256 * 3;
+    for (auto& it: virtual_color_table) {
+        int current_mse = get_fg_bg_mse(reference_rgb, it.first);
+        if (current_mse < closest_mse) {
+            closest_mse = current_mse;
+            closest_match = it.second;
+        }
+    }
+    return closest_match;
+}
+
+// right now this is 4 bit color, not 8 bit color.
+void GG::Client::_populate_color_lookup_table(
+	CharFormat *color_lookup_table, 
+	ColorSchemeKind kind, size_t num_colors, 
+	bool disable_bg_colors
+) {
 	// for char densities see https://stackoverflow.com/questions/30097953/ascii-art-sorting-an-array-of-ascii-characters-by-brightness-levels-c-c
 	const size_t NUM_CHARS = 12;
 	const float densities[NUM_CHARS] = {
 		0.0, 0.0829, 0.0848, 0.1403, 0.2417, 0.2919, 0.3294, 0.4580, 0.5972, 0.6809, 0.7834, 0.9999
 	};
 
-	// this number converts between a [0,1] range density, and a value that represents the fraction of the viewport that's coloured, by division.
+	// this number converts between a [0,1] range density, and a value that represents the fraction of the viewport that's colored, by division.
 	// It's an approximate that I got by measuring the number of unaffected pixels in a character rendered in Consolas. 
 	const float CONVERSION_FACTOR = 1.742514;
 
 	std::unordered_map<uint32_t, CharFormat> virtual_color_table;
-	for (size_t fgi = 0; fgi < NUM_XTERM_COLOURS; fgi++) {
-		int fg_r = (xterm_colours[fgi] & 0xff0000) >> 16;
-		int fg_g = (xterm_colours[fgi] & 0x00ff00) >> 8;
-		int fg_b = xterm_colours[fgi] & 0x0000ff;
+	for (size_t fgi = 0; fgi < num_colors; fgi++) {
+		int fg_r = (xterm_colors[fgi] & 0xff0000) >> 16;
+		int fg_g = (xterm_colors[fgi] & 0x00ff00) >> 8;
+		int fg_b = xterm_colors[fgi] & 0x0000ff;
 
-		for (size_t bgi = 0; bgi < NUM_XTERM_COLOURS; bgi++) {
-			int bg_r = (xterm_colours[bgi] & 0xff0000) >> 16;
-			int bg_g = (xterm_colours[bgi] & 0x00ff00) >> 8;
-			int bg_b = xterm_colours[bgi] & 0x0000ff;
+		size_t num_bg_iters = disable_bg_colors ? 1 : num_colors;
+		for (size_t bgi = 0; bgi < num_bg_iters; bgi++) {
+			int bg_r = (xterm_colors[bgi] & 0xff0000) >> 16;
+			int bg_g = (xterm_colors[bgi] & 0x00ff00) >> 8;
+			int bg_b = xterm_colors[bgi] & 0x0000ff;
 
 			for (size_t chi = 0; chi < NUM_CHARS; chi++) {
 				int iresult_r = std::lround(naive_lerp((float)bg_r, (float)fg_r, densities[chi] / CONVERSION_FACTOR));
 				int iresult_g = std::lround(naive_lerp((float)bg_g, (float)fg_g, densities[chi] / CONVERSION_FACTOR));
 				int iresult_b = std::lround(naive_lerp((float)bg_b, (float)fg_b, densities[chi] / CONVERSION_FACTOR));
 
-                // 0xf0 converts from 8 bit colours to 4 bit colours (ignore the less significant 4 bits)
+                // 0xf0 converts from 8 bit colors to 4 bit colors (ignore the less significant 4 bits)
 				uint8_t result_r = 0xf0 & (iresult_r > 255 ? 255 : (uint8_t) iresult_r);
 				uint8_t result_g = 0xf0 & (iresult_g > 255 ? 255 : (uint8_t) iresult_g);
 				uint8_t result_b = 0xf0 & (iresult_b > 255 ? 255 : (uint8_t) iresult_b);
@@ -258,12 +279,12 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 					auto existing_format = virtual_color_table[combined_rgb];
 					if (kind == ColorSchemeKind::Contrast) {
 						int new_contrast = get_fg_bg_contrast(
-							xterm_colours[new_format.fg_color_index], 
-							xterm_colours[new_format.bg_color_index]
+							xterm_colors[new_format.fg_color_index], 
+							xterm_colors[new_format.bg_color_index]
 						);
 						int existing_contrast = get_fg_bg_contrast(
-							xterm_colours[existing_format.fg_color_index], 
-							xterm_colours[existing_format.bg_color_index]
+							xterm_colors[existing_format.fg_color_index], 
+							xterm_colors[existing_format.bg_color_index]
 						);
 						if (new_contrast < existing_contrast) {
 							virtual_color_table[combined_rgb] = new_format;
@@ -271,12 +292,12 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 
 					} else if (kind == ColorSchemeKind::MSE) {
 						int new_mse = get_fg_bg_mse(
-							xterm_colours[new_format.fg_color_index], 
-							xterm_colours[new_format.bg_color_index]
+							xterm_colors[new_format.fg_color_index], 
+							xterm_colors[new_format.bg_color_index]
 						);
 						int existing_mse = get_fg_bg_mse(
-							xterm_colours[existing_format.fg_color_index], 
-							xterm_colours[existing_format.bg_color_index]
+							xterm_colors[existing_format.fg_color_index], 
+							xterm_colors[existing_format.bg_color_index]
 						);
 						if (new_mse < existing_mse) {
 							virtual_color_table[combined_rgb] = new_format;
@@ -289,15 +310,14 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 				} else {
 					virtual_color_table[combined_rgb] = new_format;
 				}
-				
 			}
 		}
 	}
 
-	printf("virtual_color_table size: %lu\n", virtual_color_table.size());
+	//printf("virtual_color_table size: %lu\n", virtual_color_table.size());
 
 	// TODO: find closest match in all of virtual_color_table's keys
-    // We'll have to sort the virtual colour table by intensity, then use upper & lower bounds to search a range. 
+    // We'll have to sort the virtual color table by intensity, then use upper & lower bounds to search a range. 
     // Ex: if our closest match has a distance of 16, then all intensity distances larger than 16 can be ignored.
 
     for (auto& it: virtual_color_table) {
@@ -307,6 +327,26 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 		int b = (it.first & 0x0000f0) >> (0 + 4);
         color_lookup_table[r * 16 * 16 + g * 16 + b] = it.second;
     }
+
+	// fill in holes with closest match
+	if (virtual_color_table.size() < 4096) {
+		// iterate through all 12-bit colors
+		for (int r = 0; r < 16; r++) {
+			for (int g = 0; g < 16; g++) {
+				for (int b = 0; b < 16; b++) {
+					// this is a 24 bit color with only the top 4 MSB of each channel in the correct location.
+					int current_rgb = (r << (16+4)) | (g << (8+4)) | (b << 4);
+					if (virtual_color_table.find(current_rgb) == virtual_color_table.end()) {
+						// if the color doesn't exist in the table, find the closest existing color & use that instead
+				        color_lookup_table[r * 16 * 16 + g * 16 + b] = find_closest_color_match(
+							virtual_color_table, 
+							current_rgb
+						);
+					}
+				}
+			}
+		}
+	}
 }
 
 int GG::Client::stream(std::string token) {
@@ -362,9 +402,9 @@ int GG::Client::stream(std::string token) {
 	closedir(dir);
 	dir = NULL;
 
-	// create colour lookup table for generating ascii colour codes 
-	CharFormat* colour_lookup_table = new CharFormat[16 * 16 * 16];
-    this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE);
+	// create color lookup table for generating ascii color codes 
+	CharFormat* color_lookup_table = new CharFormat[16 * 16 * 16];
+    this->_populate_color_lookup_table(color_lookup_table, ColorSchemeKind::MSE, NUM_XTERM_COLORS, false);
 
 	int frame = 1;
 	int last_num_rows = -1;
@@ -385,7 +425,7 @@ int GG::Client::stream(std::string token) {
 			std::cout << repeat(std::string("\033M"), last_num_rows);
 		}
 
-		std::cout << GG::bmp_to_ascii(fname.c_str(), curr_num_cols, curr_num_rows, this->_terminal_supports_colour, colour_lookup_table);
+		std::cout << GG::bmp_to_ascii(fname.c_str(), curr_num_cols, curr_num_rows, this->_terminal_supports_color, color_lookup_table);
 		last_num_rows = curr_num_rows;
 		fflush(stdout); // flush the screen
 
