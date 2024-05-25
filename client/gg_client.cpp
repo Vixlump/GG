@@ -214,8 +214,28 @@ int GG::Client::upload(std::string file_path) {
 	return 0; // success
 }
 
+CharFormat find_closest_color_match(
+    std::unordered_map<uint32_t, CharFormat> &virtual_color_table, 
+    uint32_t reference_rgb
+) {
+    CharFormat closest_match;
+    int closest_mse = 256 * 256 * 3;
+    for (auto& it: virtual_color_table) {
+        int current_mse = get_fg_bg_mse(reference_rgb, it.first);
+        if (current_mse < closest_mse) {
+            closest_mse = current_mse;
+            closest_match = it.second;
+        }
+    }
+    return closest_match;
+}
+
 // right now this is 4 bit colour, not 8 bit colour.
-void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, ColorSchemeKind kind, size_t num_colours, bool disable_bg_colours) {
+void GG::Client::_populate_color_lookup_table(
+	CharFormat *color_lookup_table, 
+	ColorSchemeKind kind, size_t num_colours, 
+	bool disable_bg_colours
+) {
 	// for char densities see https://stackoverflow.com/questions/30097953/ascii-art-sorting-an-array-of-ascii-characters-by-brightness-levels-c-c
 	const size_t NUM_CHARS = 12;
 	const float densities[NUM_CHARS] = {
@@ -243,7 +263,7 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 				int iresult_g = std::lround(naive_lerp((float)bg_g, (float)fg_g, densities[chi] / CONVERSION_FACTOR));
 				int iresult_b = std::lround(naive_lerp((float)bg_b, (float)fg_b, densities[chi] / CONVERSION_FACTOR));
 
-        // 0xf0 converts from 8 bit colours to 4 bit colours (ignore the less significant 4 bits)
+                // 0xf0 converts from 8 bit colours to 4 bit colours (ignore the less significant 4 bits)
 				uint8_t result_r = 0xf0 & (iresult_r > 255 ? 255 : (uint8_t) iresult_r);
 				uint8_t result_g = 0xf0 & (iresult_g > 255 ? 255 : (uint8_t) iresult_g);
 				uint8_t result_b = 0xf0 & (iresult_b > 255 ? 255 : (uint8_t) iresult_b);
@@ -296,35 +316,32 @@ void GG::Client::_populate_color_lookup_table(CharFormat *color_lookup_table, Co
 
 	//printf("virtual_color_table size: %lu\n", virtual_color_table.size());
 
-	  // TODO: find closest match in all of virtual_color_table's keys
+	// TODO: find closest match in all of virtual_color_table's keys
     // We'll have to sort the virtual colour table by intensity, then use upper & lower bounds to search a range. 
     // Ex: if our closest match has a distance of 16, then all intensity distances larger than 16 can be ignored.
 
     for (auto& it: virtual_color_table) {
         // each of r,g,b are 4 bit integers (at least, pretend they are)
-		    int r = (it.first & 0xf00000) >> (16 + 4);
-		    int g = (it.first & 0x00f000) >> (8 + 4);
-		    int b = (it.first & 0x0000f0) >> (0 + 4);
+		int r = (it.first & 0xf00000) >> (16 + 4);
+		int g = (it.first & 0x00f000) >> (8 + 4);
+		int b = (it.first & 0x0000f0) >> (0 + 4);
         color_lookup_table[r * 16 * 16 + g * 16 + b] = it.second;
     }
 
 	// fill in holes with closest match
 	if (virtual_color_table.size() < 4096) {
+		// iterate through all 12-bit colours
 		for (int r = 0; r < 16; r++) {
 			for (int g = 0; g < 16; g++) {
 				for (int b = 0; b < 16; b++) {
-					int combined_rgb = (r << (16+4)) | (g << (8+4)) | (b << 4);
-					if (virtual_color_table.find(combined_rgb) == virtual_color_table.end()) {
-						CharFormat closest_match;
-						int closest_mse = 256 * 256 * 3;
-						for (auto& it: virtual_color_table) {
-							int current_mse = get_fg_bg_mse(combined_rgb, it.first);
-							if (current_mse < closest_mse) {
-								closest_mse = current_mse;
-								closest_match = it.second;
-							}
-						}
-				        color_lookup_table[r * 16 * 16 + g * 16 + b] = closest_match;
+					// this is a 24 bit colour with only the top 4 MSB of each channel in the correct location.
+					int current_rgb = (r << (16+4)) | (g << (8+4)) | (b << 4);
+					if (virtual_color_table.find(current_rgb) == virtual_color_table.end()) {
+						// if the colour doesn't exist in the table, find the closest existing colour & use that instead
+				        color_lookup_table[r * 16 * 16 + g * 16 + b] = find_closest_color_match(
+							virtual_color_table, 
+							current_rgb
+						);
 					}
 				}
 			}
@@ -387,7 +404,7 @@ int GG::Client::stream(std::string token) {
 
 	// create colour lookup table for generating ascii colour codes 
 	CharFormat* colour_lookup_table = new CharFormat[16 * 16 * 16];
-  this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE, NUM_XTERM_COLOURS, false);
+    this->_populate_color_lookup_table(colour_lookup_table, ColorSchemeKind::MSE, NUM_XTERM_COLOURS, false);
 
 	int frame = 1;
 	int last_num_rows = -1;
