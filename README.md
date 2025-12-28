@@ -4,7 +4,7 @@ A totally revolutionary and futuristic video streaming command-line utility.
 
 ## Links
 
-- Home Page: [https://gleebleglob.club](https://gleebleglob.club)
+- Home Page: [https://gleebleglob.club](https://web.archive.org/web/20250315161759/http://gleebleglob.club/)
 
 ## Authors
 
